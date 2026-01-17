@@ -18,6 +18,19 @@ struct Memory {
     size_t size;
 };
 
+struct TileInfo {
+    uint32_t tile_index;
+    uint8_t* input;
+    uint8_t* output;
+    int32_t input_width;
+    int32_t tiles;
+    int32_t offset_x;
+    int32_t offset_y;
+    int32_t char_size;
+    int32_t channels;
+    int32_t max_tiles_horizontal;
+};
+
 static size_t write_callback(void *contents, size_t size, size_t nmemb, void *userp) {
     size_t realsize = size * nmemb;
     struct Memory *mem = (struct Memory *)userp;
@@ -33,25 +46,59 @@ static size_t write_callback(void *contents, size_t size, size_t nmemb, void *us
     return realsize;
 }
 
-static void add_tile(uint32_t tile_index, uint8_t* input, uint8_t* output, int32_t input_width, int32_t tiles, int32_t offset_x, int32_t offset_y,
-                     int32_t char_size, int32_t char_size_squared, int32_t channels, int32_t max_tiles_horizontal) {
+static int32_t char_to_tile_index(char c) {
+    if (c >= 'A' && c <= 'Z') return c - 'A';           // 0-25
+    if (c >= 'a' && c <= 'z') return 26 + (c - 'a');    // 26 - 51
+    return 0;
+}
 
-    const uint32_t tile_x = tile_index % max_tiles_horizontal;
-    const uint32_t tile_y = tile_index / max_tiles_horizontal;
+static void add_tile(struct TileInfo* info) {
 
-    for (int32_t y = 0; y < char_size; y++) {
-        for (int32_t x = 0; x < char_size; x++) {
-            for (int32_t c = 0; c < channels; c++) {
-                uint32_t dst_x = tile_x * char_size + x;
-                uint32_t dst_y = tile_y * char_size + y;
-                uint32_t dst_offset = (dst_y * char_size * max_tiles_horizontal + dst_x) * channels + c;
+    const uint32_t tile_x = info->tile_index % info->max_tiles_horizontal;
+    const uint32_t tile_y = info->tile_index / info->max_tiles_horizontal;
 
-                uint32_t src_offset = ((offset_y + y) * input_width + (offset_x + x)) * channels + c;
-                uint8_t src_val = input[src_offset];
-                output[dst_offset] = src_val < 120 ? 0 : 255;
+    for (int32_t y = 0; y < info->char_size; y++) {
+        for (int32_t x = 0; x < info->char_size; x++) {
+            for (int32_t c = 0; c < info->channels; c++) {
+                uint32_t dst_x = tile_x * info->char_size + x;
+                uint32_t dst_y = tile_y * info->char_size + y;
+                uint32_t dst_offset = (dst_y * info->char_size * info->max_tiles_horizontal + dst_x) * info->channels + c;
+
+                uint32_t src_offset = ((info->offset_y + y) * info->input_width + (info->offset_x + x)) * info->channels + c;
+                uint8_t src_val = info->input[src_offset];
+                info->output[dst_offset] = src_val < 120 ? 0 : 255;
             }
         }
     }
+}
+
+static void skip_unicode(char* out, size_t* size, const char* input) {
+    size_t i = 0;
+    size_t out_index = 0;
+
+    while (input[i] != '\0') {
+        unsigned char c = (unsigned char)input[i];
+        if (c < 0x80) {
+            // ASCII (1 byte)
+            if (out && out_index < *size - 1) out[out_index] = c;
+            out_index++;
+            i += 1;
+        } else if ((c & 0xE0) == 0xC0) {
+            // 2-byte UTF-8
+            i += 2;
+        } else if ((c & 0xF0) == 0xE0) {
+            // 3-byte UTF-8
+            i += 3;
+        } else if ((c & 0xF8) == 0xF0) {
+            // 4-byte UTF-8 (emoji)
+            i += 4;
+        } else {
+            // Invalid byte, skip
+            i += 1;
+        }
+    }
+    if (out) out[out_index] = '\0'; 
+    *size = out_index + 1;
 }
 
 int main(void) {
@@ -63,7 +110,7 @@ int main(void) {
     const char* json =
         "{"
         "\"model\":\"deepseek-r1\","
-        "\"prompt\":\"Yooo wsp\","
+        "\"prompt\":\"yooo how are you doing my friend!\","
         "\"stream\":false"
         "}";
 
@@ -108,39 +155,42 @@ int main(void) {
             exit(1);
         }
 
+        size_t asci_string_len;
+        skip_unicode(NULL, &asci_string_len, response);
+        char asci_string[asci_string_len];
+        skip_unicode(asci_string, &asci_string_len, response);
+
+        fprintf(stderr, "%s\n", asci_string);
+        fprintf(stderr, "str len %zu\n", asci_string_len);
+
         const int32_t offset_x = 57;
         const int32_t offset_y = 57;
         const int32_t char_size = 60;
         const int32_t char_size_squared = char_size * char_size;
         const int32_t img_size = char_size_squared * channels;
-        const int32_t tiles = 20;
+        const int32_t tiles = asci_string_len - 1;
         const int32_t tiles_horizontal = 5;
 
         uint8_t* crop_img = malloc(img_size * tiles);
 
-        size_t i = 0;
-        while (response[i] != '\0') {
-            unsigned char c = (unsigned char)response[i];
-            if (c < 0x80) {
-                // ASCII (1 byte)
-                add_tile(i, data, crop_img, width, tiles, offset_x, offset_y, char_size, char_size_squared, channels, tiles_horizontal);
-                i += 1;
-            } else if ((c & 0xE0) == 0xC0) {
-                // 2-byte UTF-8
-                i += 2;
-            } else if ((c & 0xF0) == 0xE0) {
-                // 3-byte UTF-8
-                i += 3;
-            } else if ((c & 0xF8) == 0xF0) {
-                // 4-byte UTF-8 (emoji)
-                i += 4;
-            } else {
-                // Invalid byte, skip
-                i += 1;
-            }
-        }
+        struct TileInfo info = {
+            .input = data,
+            .output = crop_img,
+            .input_width = width,
+            .tiles = tiles,
+            .offset_x = offset_x,
+            .offset_y = offset_y,
+            .char_size = char_size,
+            .channels = channels,
+            .max_tiles_horizontal = tiles_horizontal,
+        };
 
-        stbi_write_jpg("damn.jpg", char_size * tiles_horizontal, char_size * (tiles / tiles_horizontal), channels, crop_img, 90);
+        for (int32_t i = 0; i < tiles; i++) {
+            info.tile_index = i; 
+            add_tile(&info);
+        }
+       
+        stbi_write_jpg("damn.jpg", char_size * tiles_horizontal, char_size * (tiles - 1 + tiles_horizontal - 1) / tiles_horizontal, channels, crop_img, 90);
 
         wsJsonFree(root);
     }
