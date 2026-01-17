@@ -169,7 +169,7 @@ int main(void) {
     const char* json =
         "{"
         "\"model\":\"deepseek-r1\","
-        "\"prompt\":\"explain to me how pointers work in c with structures!\","
+        "\"prompt\":\"explain to me how pointers work in c with structures! DO NOT USE MARKDOWN\","
         "\"stream\":false"
         "}";
 
