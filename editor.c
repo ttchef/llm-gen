@@ -87,7 +87,7 @@ int32_t main(int32_t argc, char** argv) {
 
         if (focus_char) {
             Vector2 dim = bounding_box[current_char];
-            DrawRectangle(0, 0, (dim.x / 60.0f) * dst.width, (dim.y / 60.0f) * dst.height, (Color){225, 24, 12, 120});
+            DrawRectangle((dst.width / 2) - ((dim.x / 60.0f) * dst.width) / 2, 0, (dim.x / 60.0f) * dst.width, dst.height, (Color){225, 24, 12, 120});
         }
 
         DrawRectangle(window_width * texture_width, 0, window_width * ui_width, window_height, GRAY);
@@ -128,9 +128,6 @@ int32_t main(int32_t argc, char** argv) {
         current_y += padding_y;
         bounds.y = current_y;
         GuiSlider(bounds, "Left", "Right", &bounding_box[current_char].x, 1.0f, char_size);
-        current_y += padding_y;
-        bounds.y = current_y;
-        GuiSlider(bounds, "Left", "Right", &bounding_box[current_char].y, 1.0f, char_size);
 
         EndDrawing();
     }
