@@ -14,9 +14,9 @@
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "stb_image_write.h"
 
-const bool generate_ai_answer = false;
+const bool generate_ai_answer = true;
 
-const int32_t arial_widths[128] = {
+const int32_t arial_widths[256] = {
     ['A'] = 667, ['B'] = 667, ['C'] = 722, ['D'] = 722, ['E'] = 667,
     ['F'] = 611, ['G'] = 778, ['H'] = 722, ['I'] = 348, ['J'] = 500,
     ['K'] = 667, ['L'] = 556, ['M'] = 833, ['N'] = 722, ['O'] = 878,
@@ -41,7 +41,14 @@ const int32_t arial_widths[128] = {
     [':'] = 378, [';'] = 378, ['<'] = 584, ['='] = 584, ['>'] = 584,
     ['?'] = 556, ['@'] = 1015,
     ['['] = 578, ['\\'] = 878, [']'] = 578, ['^'] = 469, ['_'] = 556,
-    ['`'] = 333, ['{'] = 454, ['|'] = 260, ['}'] = 454, ['~'] = 584
+    ['`'] = 333, ['{'] = 454, ['|'] = 260, ['}'] = 454, ['~'] = 584,
+    [0xC4] = 668, // Ä
+    [0xD6] = 878, // Ö
+    [0xDC] = 722, // Ü
+    [0xE4] = 556, // ä
+    [0xF6] = 576, // ö
+    [0xFC] = 556, // ü
+    [0xDF] = 556, // ß
 };
 
 struct Memory {
@@ -117,7 +124,7 @@ static int32_t count_rows(const char* text, size_t len, int32_t char_size, int32
     return rows;
 }
 
-static int32_t char_to_tile_index(char c) {
+static int32_t char_to_tile_index(uint8_t c) {
     if (c >= 'A' && c <= 'Z') return c - 'A';           // 0-25
     if (c >= 'a' && c <= 'z') return 26 + (c - 'a');    // 26 - 51
 
@@ -153,9 +160,16 @@ static int32_t char_to_tile_index(char c) {
         case '^': return 80;
         case '_': return 81;
         case '+': return 82;
+        case 0xC4: return 83;
+        case 0xD6: return 84;
+        case 0xDC: return 85;
+        case 0xE4: return 86;
+        case 0xF6: return 87;
+        case 0xFC: return 88;
+        case 0xDF: return 89;
     }
     
-    if (c >= '0' && c <= '9') return 83 + c - '0';
+    if (c >= '0' && c <= '9') return 90 + c - '0';
 
     return 52;
 }
@@ -238,7 +252,22 @@ static void skip_unicode(char* out, size_t* size, const char* input) {
             i += 1;
         } else if ((c & 0xE0) == 0xC0) {
             // 2-byte UTF-8
-            i += 2;
+            // german ä ö etc..
+            if (input[i + 1]) {
+                uint8_t c1 = (uint8_t)input[i];
+                uint8_t c2 = (uint8_t)input[i + 1];
+
+                uint32_t codepoint = ((c1 & 0x1F) << 6) | (c2 & 0x3F);
+
+                if (codepoint < 256 && out && out_index < *size - 1) {
+                    out[out_index] = (uint8_t)codepoint;
+                    out_index++;
+                }
+                i += 2;
+            }
+            else {
+                i += 2;
+            }
         } else if ((c & 0xF0) == 0xE0) {
             // 3-byte UTF-8
             i += 3;
@@ -282,7 +311,7 @@ static wsJson* get_ai_json() {
     const char* json =
         "{"
         "\"model\":\"deepseek-r1\","
-        "\"prompt\":\"explain to me how pointers work in c with structures! DO NOT USE MARKDOWN AND ONLY ASCII\","
+        "\"prompt\":\"explain simple what politics is!  make use of paragraphs DO NOT USE MARKDOWN AND ONLY ASCII AND WRITE IN GERMAN\","
         "\"stream\":false"
         "}";
 
