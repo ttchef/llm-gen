@@ -22,6 +22,8 @@ const uint32_t char_offset_y = 58;
 const float char_size = 58.601f;
 const uint32_t sym_per_line = 26;
 
+const uint32_t sym_total = 99;
+
 typedef struct Vector2I {
     int32_t x;
     int32_t y;
@@ -42,6 +44,8 @@ int32_t main(int32_t argc, char** argv) {
     int32_t current_char = 0;
     Vector2I focused_char = (Vector2I){0};
     bool focus_char = false;
+    Vector2 bounding_box[sym_total];
+    memset(bounding_box, 0, sizeof(Vector2) * sym_total);
 
     Texture2D image = LoadTexture(argv[1]);
     float image_ratio = (float)image.width / (float)image.height;
@@ -81,6 +85,11 @@ int32_t main(int32_t argc, char** argv) {
 
         DrawTexturePro(image, src, dst, (Vector2){0, 0}, 0.0f, WHITE);
 
+        if (focus_char) {
+            Vector2 dim = bounding_box[current_char];
+            DrawRectangle(0, 0, (dim.x / 60.0f) * dst.width, (dim.y / 60.0f) * dst.height, (Color){225, 24, 12, 120});
+        }
+
         DrawRectangle(window_width * texture_width, 0, window_width * ui_width, window_height, GRAY);
 
         // UI
@@ -103,10 +112,25 @@ int32_t main(int32_t argc, char** argv) {
         current_y += padding_y;
         bounds.y = current_y;
         if (GuiButton(bounds, "Next Char")) {
-            current_char++;
+            if (current_char + 1 < sym_total) current_char++;
             focused_char.x = current_char % sym_per_line;
             focused_char.y = current_char / sym_per_line;
         }
+
+        current_y += padding_y;
+        bounds.y = current_y;
+        if (GuiButton(bounds, "Previous Char")) {
+            if (current_char - 1 >= 0) current_char--; 
+            focused_char.x = current_char % sym_per_line;
+            focused_char.y = current_char / sym_per_line;
+        }
+
+        current_y += padding_y;
+        bounds.y = current_y;
+        GuiSlider(bounds, "Left", "Right", &bounding_box[current_char].x, 1.0f, char_size);
+        current_y += padding_y;
+        bounds.y = current_y;
+        GuiSlider(bounds, "Left", "Right", &bounding_box[current_char].y, 1.0f, char_size);
 
         EndDrawing();
     }
