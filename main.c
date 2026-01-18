@@ -14,34 +14,34 @@
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "stb_image_write.h"
 
-const bool generate_ai_answer = false;
+const bool generate_ai_answer = true;
 
 const int32_t arial_widths[128] = {
     ['A'] = 667, ['B'] = 667, ['C'] = 722, ['D'] = 722, ['E'] = 667,
-    ['F'] = 611, ['G'] = 778, ['H'] = 722, ['I'] = 278, ['J'] = 500,
+    ['F'] = 611, ['G'] = 778, ['H'] = 722, ['I'] = 348, ['J'] = 500,
     ['K'] = 667, ['L'] = 556, ['M'] = 833, ['N'] = 722, ['O'] = 778,
     ['P'] = 667, ['Q'] = 778, ['R'] = 722, ['S'] = 667, ['T'] = 611,
-    ['U'] = 722, ['V'] = 667, ['W'] = 944, ['X'] = 667, ['Y'] = 667,
+    ['U'] = 722, ['V'] = 667, ['W'] = 944, ['X'] = 667, ['Y'] = 867,
     ['Z'] = 611,
     
-    ['a'] = 556, ['b'] = 556, ['c'] = 500, ['d'] = 556, ['e'] = 556,
-    ['f'] = 278, ['g'] = 556, ['h'] = 556, ['i'] = 222, ['j'] = 222,
-    ['k'] = 500, ['l'] = 222, ['m'] = 833, ['n'] = 556, ['o'] = 556,
-    ['p'] = 556, ['q'] = 556, ['r'] = 333, ['s'] = 500, ['t'] = 278,
+    ['a'] = 456, ['b'] = 556, ['c'] = 500, ['d'] = 556, ['e'] = 556,
+    ['f'] = 278, ['g'] = 556, ['h'] = 456, ['i'] = 222, ['j'] = 322,
+    ['k'] = 500, ['l'] = 422, ['m'] = 633, ['n'] = 556, ['o'] = 456,
+    ['p'] = 556, ['q'] = 556, ['r'] = 333, ['s'] = 500, ['t'] = 378,
     ['u'] = 556, ['v'] = 500, ['w'] = 722, ['x'] = 500, ['y'] = 500,
     ['z'] = 500,
     
     ['0'] = 556, ['1'] = 556, ['2'] = 556, ['3'] = 556, ['4'] = 556,
     ['5'] = 556, ['6'] = 556, ['7'] = 556, ['8'] = 556, ['9'] = 556,
     
-    [' '] = 678,  
-    ['!'] = 278, ['"'] = 355, ['#'] = 556, ['$'] = 556, ['%'] = 889,
-    ['&'] = 667, ['\''] = 191, ['('] = 333, [')'] = 333, ['*'] = 389,
-    ['+'] = 584, [','] = 278, ['-'] = 333, ['.'] = 278, ['/'] = 278,
-    [':'] = 278, [';'] = 278, ['<'] = 584, ['='] = 584, ['>'] = 584,
+    [' '] = 478,  
+    ['!'] = 278, ['"'] = 355, ['#'] = 856, ['$'] = 556, ['%'] = 889,
+    ['&'] = 667, ['\''] = 191, ['('] = 633, [')'] = 633, ['*'] = 589,
+    ['+'] = 784, [','] = 278, ['-'] = 333, ['.'] = 278, ['/'] = 878,
+    [':'] = 378, [';'] = 378, ['<'] = 584, ['='] = 584, ['>'] = 584,
     ['?'] = 556, ['@'] = 1015,
-    ['['] = 278, ['\\'] = 278, [']'] = 278, ['^'] = 469, ['_'] = 556,
-    ['`'] = 333, ['{'] = 334, ['|'] = 260, ['}'] = 334, ['~'] = 584
+    ['['] = 878, ['\\'] = 878, [']'] = 878, ['^'] = 469, ['_'] = 556,
+    ['`'] = 333, ['{'] = 454, ['|'] = 260, ['}'] = 454, ['~'] = 584
 };
 
 struct Memory {
@@ -214,7 +214,9 @@ static void skip_unicode(char* out, size_t* size, const char* input) {
         if (c < 0x80) {
             // ASCII (1 byte)
             if (out && out_index < *size - 1) {
-                if (c == '\\' && input[i + 1] == 'u') {
+                if (c == '\\' && input[i + 1] == 'u' && 
+                input[i + 2] && input[i + 3] && input[i + 4] && input[i + 5]) {
+
                     char s[5];
                     s[0] = input[i + 2];
                     s[1] = input[i + 3];
@@ -222,8 +224,12 @@ static void skip_unicode(char* out, size_t* size, const char* input) {
                     s[3] = input[i + 5];
                     s[4] = '\0';
                     uint32_t hex_val = strtoul(s, NULL, 16);
-                    c = hex_val;
-                    i += 5;
+                    if (hex_val < 128) { // TODO: change later to extended
+                        out[out_index] = (char)hex_val;
+                        out_index++;
+                    }
+                    i += 6;
+                    continue;
                 }
                 out[out_index] = c;
             }
@@ -292,21 +298,21 @@ static wsJson* get_ai_json() {
     curl_slist_free_all(headers);
     curl_easy_cleanup(curl);
 
-    free(chunk.data);
     curl_global_cleanup();
 
     const char* json_string_data = (const char*)chunk.data;
     wsJson* root = wsStringToJson(&json_string_data);
+    free(chunk.data);
     return root;
 }
 
 int main(void) {
+    wsJson* root = NULL;
     char* response = NULL;
     if (generate_ai_answer) {
-        wsJson* root = get_ai_json();
+        root = get_ai_json();
         response = wsJsonGetString(root, "response");
         fprintf(stderr, "Response: %s\n", response);
-        wsJsonFree(root);
     }
     else {
         response = "Yooo im good how are you\n12345:!!!?<>";
@@ -327,6 +333,9 @@ int main(void) {
     skip_unicode(NULL, &asci_string_len, response);
     char asci_string[asci_string_len];
     skip_unicode(asci_string, &asci_string_len, response);
+
+    // free old string resources
+    if (root) wsJsonFree(root);
 
     fprintf(stderr, "%s\n", asci_string);
     fprintf(stderr, "str len %zu\n", asci_string_len);
