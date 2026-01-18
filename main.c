@@ -74,6 +74,9 @@ struct TileInfo {
     int32_t table_sym_horizontal;
     int32_t grid_width;
     int32_t grid_height;
+    int32_t padding_x;
+    int32_t padding_y;
+    int32_t rows_count;
 };
 
 static size_t write_callback(void *contents, size_t size, size_t nmemb, void *userp) {
@@ -179,16 +182,19 @@ static void add_tile(struct TileInfo* info) {
     const uint32_t pixels_char_horizontal = info->char_size * relative_font_width;
     const uint32_t atlas_center_offset = info->char_size / 2 - pixels_char_horizontal / 2;
 
+    const uint32_t padding_x = info->current_x == 0 ? info->padding_x : 0;
+    const uint32_t padding_y = (info->current_y == 0 || info->current_y == info->rows_count - 1) ? info->padding_y : 0;
+
     if (info->current_x + pixels_char_horizontal >= info->max_pixels_horizontal) {
-        info->current_y += info->char_size;
+        info->current_y += info->char_size + padding_y;
         info->current_x = 0;
     }
 
     for (int32_t y = 0; y < info->char_size; y++) {
         for (int32_t x = 0; x < pixels_char_horizontal; x++) {
             for (int32_t c = 0; c < info->channels; c++) {
-                uint32_t dst_x = info->current_x + x;
-                uint32_t dst_y = info->current_y + y;
+                uint32_t dst_x = info->current_x + x + padding_x;
+                uint32_t dst_y = info->current_y + y + padding_y;
                 uint32_t dst_offset = (dst_y * info->max_pixels_horizontal + dst_x) * info->channels + c;
 
                 uint32_t src_x = info->offset_x + x + atlas_center_offset;
@@ -201,7 +207,7 @@ static void add_tile(struct TileInfo* info) {
         }
     }
 
-    info->current_x += pixels_char_horizontal;
+    info->current_x += pixels_char_horizontal + padding_x;
 }
 
 static void add_char(uint8_t c, struct TileInfo* info) {
@@ -285,7 +291,7 @@ static void skip_unicode(char* out, size_t* size, const char* input) {
 
 static void draw_square_background(struct TileInfo* info) {
     // Horizontal
-    for (int32_t y = 0; y < info->grid_height; y += 58) {
+    for (int32_t y = 0; y < info->grid_height; y += info->char_size) {
         for (int32_t x = 0; x < info->grid_width; x++) {
             for (int32_t c = 0; c < info->channels; c++) {
                 info->output[(y * info->max_pixels_horizontal + x) * info->channels + c] = 211;
@@ -294,7 +300,7 @@ static void draw_square_background(struct TileInfo* info) {
     }
 
     for (int32_t y = 0; y < info->grid_height; y++) {
-        for (int32_t x = 0; x < info->grid_width; x += 58) {
+        for (int32_t x = 0; x < info->grid_width; x += info->char_size) {
             for (int32_t c = 0; c < info->channels; c++) {
                 info->output[(y * info->max_pixels_horizontal + x) * info->channels + c] = 211;
             }
@@ -419,6 +425,9 @@ int main(void) {
         .table_sym_horizontal = 26,
         .grid_width = grid_width,
         .grid_height = grid_height,
+        .padding_x = char_size,
+        .padding_y = char_size,
+        .rows_count = rows,
     };
 
     draw_square_background(&info);
