@@ -76,8 +76,7 @@ struct TileInfo {
     int32_t table_sym_horizontal;
     int32_t grid_width;
     int32_t grid_height;
-    int32_t padding_x;
-    int32_t padding_y;
+    int32_t padding_x; // padding_y is hardcoded
     int32_t rows_count;
 };
 
@@ -180,7 +179,6 @@ static int32_t char_to_tile_index(uint8_t c) {
 
     return 52;
 }
-
 
 static void add_tile(struct TileInfo* info) {
     const float relative_font_width = get_char_width(info->character) / 1000.0f;
@@ -410,7 +408,7 @@ int main(void) {
 
     int32_t rows = count_rows(asci_string, asci_string_len, char_size, pixels_horizontal);
     int32_t grid_width = pixels_horizontal;
-    int32_t grid_height = char_size * rows;
+    int32_t grid_height = char_size * rows + char_size * 2;
     size_t total_bytes = (size_t)grid_width * (size_t)grid_height * (size_t)channels;;
     uint8_t* crop_img = malloc(total_bytes);
     memset(crop_img, 255, grid_width * grid_height * channels);
@@ -431,8 +429,8 @@ int main(void) {
         .grid_width = grid_width,
         .grid_height = grid_height,
         .padding_x = char_size,
-        .padding_y = char_size,
         .rows_count = rows,
+        .current_y = char_size,
     };
 
     draw_background(&info, false);
@@ -445,12 +443,14 @@ int main(void) {
         }
 
         if (asci_string[i] && asci_string[i] != ' ') info.in_word = true;
+        else info.in_word = false;
  
         // check end to dash
         const float relative_font_width = get_char_width(asci_string[i]) / 1000.0f;
         const uint32_t pixels_char_horizontal = info.char_size * relative_font_width;
         if (info.current_x + pixels_char_horizontal * 2 >= info.max_pixels_horizontal && info.in_word) {
             add_char('-', &info);
+            info.current_x = 0;
             info.current_y += info.char_size;
         }
 
