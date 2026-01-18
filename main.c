@@ -82,6 +82,12 @@ static size_t write_callback(void *contents, size_t size, size_t nmemb, void *us
     return realsize;
 }
 
+static inline int32_t get_char_width(uint8_t c) {
+    int32_t width = arial_widths[c];
+    if (width == 0) return 500;
+    return width;
+}
+
 static int32_t count_rows(const char* text, size_t len, int32_t char_size, int32_t pixels_horizontal) {
     int32_t current_x = 0;
     int32_t rows = 1;
@@ -94,7 +100,7 @@ static int32_t count_rows(const char* text, size_t len, int32_t char_size, int32
             continue;
         }
 
-        float relative_width = arial_widths[(uint8_t)text[i]] / 1000.0f;
+        float relative_width = get_char_width((uint8_t)(text[i])) / 1000.0f;
         int32_t pixels_char = char_size * relative_width;
 
         if (current_x + pixels_char >= pixels_horizontal) {
@@ -152,8 +158,9 @@ static int32_t char_to_tile_index(char c) {
 }
 
 static void add_tile(struct TileInfo* info) {
-    float relative_font_width = arial_widths[info->character] / 1000.0f;
-    int32_t pixels_char_horizontal = info->char_size * relative_font_width;
+    const float relative_font_width = get_char_width(info->character) / 1000.0f;
+    const uint32_t pixels_char_horizontal = info->char_size * relative_font_width;
+    const uint32_t atlas_center_offset = info->char_size / 2 - pixels_char_horizontal / 2;
 
     for (int32_t y = 0; y < info->char_size; y++) {
         for (int32_t x = 0; x < pixels_char_horizontal; x++) {
@@ -162,7 +169,7 @@ static void add_tile(struct TileInfo* info) {
                 uint32_t dst_y = info->current_y + y;
                 uint32_t dst_offset = (dst_y * info->max_pixels_horizontal + dst_x) * info->channels + c;
 
-                uint32_t src_x = info->offset_x + x + pixels_char_horizontal / 2;
+                uint32_t src_x = info->offset_x + x + atlas_center_offset;
                 uint32_t src_y = info->offset_y + y;
                 uint32_t src_offset = (src_y * info->input_width + src_x) * info->channels + c;
 
@@ -182,7 +189,7 @@ static void add_tile(struct TileInfo* info) {
     }
 }
 
-static void add_char(char c, struct TileInfo* info) {
+static void add_char(uint8_t c, struct TileInfo* info) {
     int32_t index = char_to_tile_index(c);
     info->offset_x = info->base_x + (index % info->table_sym_horizontal) * info->char_size;
     info->offset_y = info->base_y + (index / info->table_sym_horizontal) * info->char_size;
@@ -360,7 +367,7 @@ int main(void) {
             info.current_x = 0;
             i++;
         }
-        add_char(asci_string[i], &info);
+        add_char((uint8_t)asci_string[i], &info);
     }
 
     stbi_write_jpg("damn.jpg", grid_width, grid_height, channels, crop_img, 90);
