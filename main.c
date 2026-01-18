@@ -358,7 +358,7 @@ static wsJson* get_ai_json() {
     return root;
 }
 
-int main(void) {
+int32_t main(void) {
     wsJson* root = NULL;
     char* response = NULL;
     if (generate_ai_answer) {
