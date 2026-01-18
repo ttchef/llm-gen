@@ -14,9 +14,9 @@
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "stb_image_write.h"
 
-const bool generate_ai_answer = true;
+const bool generate_ai_answer = false;
 
-const int32_t arial_widths[256] = {
+const int32_t font_widths[256] = {
     ['A'] = 667, ['B'] = 667, ['C'] = 722, ['D'] = 722, ['E'] = 667,
     ['F'] = 611, ['G'] = 778, ['H'] = 722, ['I'] = 348, ['J'] = 500,
     ['K'] = 667, ['L'] = 556, ['M'] = 833, ['N'] = 722, ['O'] = 878,
@@ -92,7 +92,7 @@ static size_t write_callback(void *contents, size_t size, size_t nmemb, void *us
 }
 
 static inline int32_t get_char_width(uint8_t c) {
-    int32_t width = arial_widths[c];
+    int32_t width = font_widths[c];
     if (width == 0) return 500;
     return width;
 }
@@ -285,7 +285,7 @@ static void skip_unicode(char* out, size_t* size, const char* input) {
 
 static void draw_square_background(struct TileInfo* info) {
     // Horizontal
-    for (int32_t y = 0; y < info->grid_height; y += 50) {
+    for (int32_t y = 0; y < info->grid_height; y += 58) {
         for (int32_t x = 0; x < info->grid_width; x++) {
             for (int32_t c = 0; c < info->channels; c++) {
                 info->output[(y * info->max_pixels_horizontal + x) * info->channels + c] = 211;
@@ -294,7 +294,7 @@ static void draw_square_background(struct TileInfo* info) {
     }
 
     for (int32_t y = 0; y < info->grid_height; y++) {
-        for (int32_t x = 0; x < info->grid_width; x += 50) {
+        for (int32_t x = 0; x < info->grid_width; x += 58) {
             for (int32_t c = 0; c < info->channels; c++) {
                 info->output[(y * info->max_pixels_horizontal + x) * info->channels + c] = 211;
             }
