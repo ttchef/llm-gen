@@ -22,12 +22,49 @@ const uint32_t char_offset_y = 58;
 const float char_size = 58.601f;
 const uint32_t sym_per_line = 26;
 
-const uint32_t sym_total = 99;
+const uint32_t sym_total = 100;
 
 typedef struct Vector2I {
     int32_t x;
     int32_t y;
 } Vector2I;
+
+static uint8_t tile_index_to_char(int32_t index) {
+    static const uint8_t table[] = {
+        'A','B','C','D','E','F','G','H','I','J','K','L','M',
+        'N','O','P','Q','R','S','T','U','V','W','X','Y','Z',
+
+        'a','b','c','d','e','f','g','h','i','j','k','l','m',
+        'n','o','p','q','r','s','t','u','v','w','x','y','z',
+
+        ' ', '!', '?', '\'', ',', ':', '.', ';', '@', '*',
+        '(', ')', '[', ']', '{', '}', '&', '=', '|', '-',
+        '>', '<', '#', '"', '/', '\\', '%', '$', '^', '_',
+        '+', 0xC4, 0xD6, 0xDC, 0xE4, 0xF6, 0xFC, 0xDF,
+
+        '0','1','2','3','4','5','6','7','8','9'
+    };
+
+    if (index < 0 || index >= (int32_t)(sizeof(table)))
+        return ' ';
+
+    return table[index];
+}
+
+static void export(Vector2* bounding_box, size_t count) {
+    FILE* file = fopen("output.txt", "wb");
+    if (!file) {
+        fprintf(stderr, "failed to write file\n");
+        exit(1);
+    }
+
+    for (int32_t i = 0; i < count; i++) {
+        uint8_t ascii = tile_index_to_char(i);
+        fprintf(file, "%c %d %d\n", ascii, (int32_t)bounding_box[i].x, (int32_t)bounding_box[i].y);
+    }
+
+    fclose(file);
+}
 
 // char because of lsp
 int32_t main(int32_t argc, char** argv) {
@@ -132,6 +169,18 @@ int32_t main(int32_t argc, char** argv) {
         current_y += padding_y;
         bounds.y = current_y;
         GuiSlider(bounds, "Left", "Right", &bounding_box[current_char].y, -char_size, char_size);
+
+        current_y += padding_y;
+        bounds.y = current_y;
+        if (GuiButton(bounds, "Export")) {
+            export(bounding_box, sym_total);
+        }
+
+        current_y += padding_y;
+        bounds.y = current_y;
+        if (GuiButton(bounds, "Import")) {
+
+        }
 
         EndDrawing();
     }
