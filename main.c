@@ -85,6 +85,8 @@ static int32_t char_to_tile_index(char c) {
         case '^': return 80;
         case '_': return 81;
     }
+    
+    if (c >= '0' && c <= '9') return 82 + c - '0';
 
     return 52;
 }
@@ -139,7 +141,20 @@ static void skip_unicode(char* out, size_t* size, const char* input) {
         unsigned char c = (unsigned char)input[i];
         if (c < 0x80) {
             // ASCII (1 byte)
-            if (out && out_index < *size - 1) out[out_index] = c;
+            if (out && out_index < *size - 1) {
+                if (c == '\\' && input[i + 1] == 'u') {
+                    char s[5];
+                    s[0] = input[i + 2];
+                    s[1] = input[i + 3];
+                    s[2] = input[i + 4];
+                    s[3] = input[i + 5];
+                    s[4] = '\0';
+                    uint32_t hex_val = strtoul(s, NULL, 16);
+                    c = hex_val;
+                    i += 5;
+                }
+                out[out_index] = c;
+            }
             out_index++;
             i += 1;
         } else if ((c & 0xE0) == 0xC0) {
@@ -169,7 +184,7 @@ int main(void) {
     const char* json =
         "{"
         "\"model\":\"deepseek-r1\","
-        "\"prompt\":\"explain to me how pointers work in c with structures! DO NOT USE MARKDOWN\","
+        "\"prompt\":\"explain to me how pointers work in c with structures! DO NOT USE MARKDOWN AND ONLY ASCII\","
         "\"stream\":false"
         "}";
 
@@ -258,6 +273,7 @@ int main(void) {
                 i += 2;
                 while (i % info.max_tiles_horizontal != 0) i++;
             }
+   
             info.tile_index = i; 
             add_char(asci_string[i], &info);
         }
