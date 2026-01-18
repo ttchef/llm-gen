@@ -16,41 +16,117 @@
 
 const bool generate_ai_answer = false;
 
-const int32_t font_widths[256] = {
-    ['A'] = 667, ['B'] = 667, ['C'] = 722, ['D'] = 722, ['E'] = 667,
-    ['F'] = 611, ['G'] = 778, ['H'] = 722, ['I'] = 348, ['J'] = 500,
-    ['K'] = 667, ['L'] = 556, ['M'] = 833, ['N'] = 722, ['O'] = 878,
-    ['P'] = 667, ['Q'] = 778, ['R'] = 722, ['S'] = 667, ['T'] = 611,
-    ['U'] = 722, ['V'] = 667, ['W'] = 944, ['X'] = 667, ['Y'] = 867,
-    ['Z'] = 611,
-    
-    ['a'] = 556, ['b'] = 556, ['c'] = 500, ['d'] = 556, ['e'] = 556,
-    ['f'] = 278, ['g'] = 556, ['h'] = 456, ['i'] = 222, ['j'] = 322,
-    ['k'] = 500, ['l'] = 422, ['m'] = 633, ['n'] = 556, ['o'] = 576,
-    ['p'] = 556, ['q'] = 556, ['r'] = 583, ['s'] = 530, ['t'] = 478,
-    ['u'] = 556, ['v'] = 700, ['w'] = 722, ['x'] = 500, ['y'] = 650,
-    ['z'] = 800,
-    
-    ['0'] = 756, ['1'] = 556, ['2'] = 556, ['3'] = 556, ['4'] = 556,
-    ['5'] = 556, ['6'] = 556, ['7'] = 556, ['8'] = 556, ['9'] = 556,
-    
-    [' '] = 578,  
-    ['!'] = 278, ['"'] = 355, ['#'] = 856, ['$'] = 556, ['%'] = 889,
-    ['&'] = 667, ['\''] = 191, ['('] = 633, [')'] = 633, ['*'] = 629,
-    ['+'] = 784, [','] = 278, ['-'] = 333, ['.'] = 278, ['/'] = 878,
-    [':'] = 378, [';'] = 378, ['<'] = 584, ['='] = 584, ['>'] = 584,
-    ['?'] = 556, ['@'] = 1015,
-    ['['] = 578, ['\\'] = 878, [']'] = 578, ['^'] = 469, ['_'] = 556,
-    ['`'] = 333, ['{'] = 454, ['|'] = 260, ['}'] = 454, ['~'] = 584,
-    [0xC4] = 668, // Ä
-    [0xD6] = 878, // Ö
-    [0xDC] = 722, // Ü
-    [0xE4] = 556, // ä
-    [0xF6] = 576, // ö
-    [0xFC] = 556, // ü
-    [0xDF] = 556, // ß
+struct Glyph {
+    uint32_t width;
+    int32_t offset;
 };
 
+const struct Glyph font_widths[256] = {
+    ['A'] = { 33, -32 },
+    ['B'] = { 27,   0 },
+    ['C'] = { 26, -27 },
+    ['D'] = { 25, -46 },
+    ['E'] = { 33,  19 },
+    ['F'] = { 31,  14 },
+    ['G'] = { 28, -18 },
+    ['H'] = { 26, -31 },
+    ['I'] = { 14, -24 },
+    ['J'] = { 25, -32 },
+    ['K'] = { 27, -15 },
+    ['L'] = { 32, -13 },
+    ['M'] = { 37, -36 },
+    ['N'] = { 40,   8 },
+    ['O'] = { 34,  43 },
+    ['P'] = { 24,  13 },
+    ['Q'] = { 38,   0 },
+    ['R'] = { 25,  34 },
+    ['S'] = { 21, -34 },
+    ['T'] = { 41,  58 },
+    ['U'] = { 33,  -1 },
+    ['V'] = { 35, -31 },
+    ['W'] = { 42, -23 },
+    ['X'] = { 35,   0 },
+    ['Y'] = { 32, -24 },
+    ['Z'] = { 28, -31 },
+
+    ['a'] = { 24,   0 },
+    ['b'] = { 20,  14 },
+    ['c'] = { 21,  16 },
+    ['d'] = { 28,   9 },
+    ['e'] = { 19,   8 },
+    ['f'] = { 17,   0 },
+    ['g'] = { 23,   0 },
+    ['h'] = { 20, -19 },
+    ['i'] = { 12,   0 },
+    ['j'] = { 13, -39 },
+    ['k'] = { 19, -23 },
+    ['l'] = { 27,  -9 },
+    ['m'] = { 22, -18 },
+    ['n'] = { 19, -20 },
+    ['o'] = { 23,   6 },
+    ['p'] = { 22, -17 },
+    ['q'] = { 15, -54 },
+    ['r'] = { 17,  24 },
+    ['s'] = { 14, -13 },
+    ['t'] = { 19,  18 },
+    ['u'] = { 22, -19 },
+    ['v'] = { 18,   0 },
+    ['w'] = { 27, -21 },
+    ['x'] = { 21, -16 },
+    ['y'] = { 14, -28 },
+    ['z'] = { 18,  45 },
+
+    [' '] = { 34,   0 },
+    ['!'] = { 12,   0 },
+    ['?'] = { 17, -21 },
+    ['\'']= { 10,  21 },
+    [','] = { 11,  12 },
+    [':'] = { 11, -18 },
+    ['.'] = { 10, -20 },
+    [';'] = { 16, -18 },
+    ['@'] = { 30,   0 },
+    ['*'] = { 28,   0 },
+    ['('] = { 15, -26 },
+    [')'] = { 17,   0 },
+    ['['] = { 17,   0 },
+    [']'] = { 19, -17 },
+    ['{'] = { 18, -37 },
+    ['}'] = { 18,   0 },
+    ['&'] = { 27, -21 },
+    ['='] = { 26,   9 },
+    ['|'] = { 10,   0 },
+    ['-'] = { 21,  -8 },
+    ['>'] = { 22,   0 },
+    ['<'] = { 18, -24 },
+    ['#'] = { 30,   0 },
+    ['"'] = { 17,   0 },
+    ['/'] = { 37,   0 },
+    ['\\']= { 42,   0 },
+    ['%'] = { 37,   0 },
+    ['$'] = { 26,   0 },
+    ['^'] = { 22, -32 },
+    ['_'] = { 37,   0 },
+    ['+'] = { 23, -28 },
+
+    [0xC4] = { 31,   0 },  // Ä
+    [0xD6] = { 31,   0 },  // Ö
+    [0xDC] = { 27, -23 },  // Ü
+    [0xE4] = { 23, -49 },  // ä
+    [0xF6] = { 24, -24 },  // ö
+    [0xFC] = { 24, -58 },  // ü
+    [0xDF] = { 24, -31 },  // ß
+
+    ['0'] = { 35,  50 },
+    ['1'] = { 22,   0 },
+    ['2'] = { 22,  52 },
+    ['3'] = { 20,   0 },
+    ['4'] = { 24, -12 },
+    ['5'] = { 22,  58 },
+    ['6'] = { 17,   0 },
+    ['7'] = { 22,   0 },
+    ['8'] = { 26,   0 },
+    ['9'] = { 25,  58 }, 
+};
 
 struct Memory {
     uint8_t* data;
@@ -70,7 +146,7 @@ struct TileInfo {
     uint32_t base_y;
     uint32_t offset_x;
     uint32_t offset_y;
-    uint32_t char_size;
+    float char_size;
     uint32_t channels;
     uint32_t usable_pixels_horizontal;
     uint32_t max_pixels_horizontal;
@@ -98,13 +174,16 @@ static size_t write_callback(void *contents, size_t size, size_t nmemb, void *us
     return realsize;
 }
 
-static inline int32_t get_char_width(uint8_t c) {
-    int32_t width = font_widths[c];
-    if (width == 0) return 500;
+static inline uint32_t get_char_width(uint8_t c) {
+    uint32_t width = font_widths[c].width;
     return width;
 }
 
-static int32_t count_rows(const char* text, size_t len, int32_t char_size, int32_t pixels_horizontal) {
+static inline int32_t get_char_offset(uint8_t c) {
+    int32_t offset = font_widths[c].offset;
+    return offset;
+
+}static int32_t count_rows(const char* text, size_t len, float char_size, int32_t pixels_horizontal) {
     int32_t current_x = 0;
     int32_t rows = 1;
 
@@ -116,8 +195,7 @@ static int32_t count_rows(const char* text, size_t len, int32_t char_size, int32
             continue;
         }
 
-        float relative_width = get_char_width((uint8_t)(text[i])) / 1000.0f;
-        int32_t pixels_char = char_size * relative_width;
+        int32_t pixels_char = get_char_width((uint8_t)text[i]);
 
         if (current_x + pixels_char >= pixels_horizontal) {
             rows++;
@@ -182,9 +260,10 @@ static int32_t char_to_tile_index(uint8_t c) {
 }
 
 static void add_tile(struct TileInfo* info) {
-    const float relative_font_width = get_char_width(info->character) / 1000.0f;
-    const uint32_t pixels_char_horizontal = info->char_size * relative_font_width;
+    const uint32_t pixels_char_horizontal = get_char_width(info->character);
+    const int32_t char_offset = get_char_offset(info->character);
     const uint32_t atlas_center_offset = info->char_size / 2 - pixels_char_horizontal / 2;
+    const int32_t tile_center_x = info->offset_x + (info->char_size / 2);
 
     if (info->current_x + pixels_char_horizontal >= info->usable_pixels_horizontal) {
         info->current_y += info->char_size;
@@ -200,7 +279,7 @@ static void add_tile(struct TileInfo* info) {
                 uint32_t dst_y = info->current_y + y;
                 uint32_t dst_offset = (dst_y * info->max_pixels_horizontal + dst_x) * info->channels + c;
 
-                uint32_t src_x = info->offset_x + x + atlas_center_offset;
+                uint32_t src_x = info->offset_x + (info->char_size / 2) - pixels_char_horizontal / 2 + x;
                 uint32_t src_y = info->offset_y + y;
                 uint32_t src_offset = (src_y * info->input_width + src_x) * info->channels + c;
 
@@ -314,7 +393,7 @@ static wsJson* get_ai_json() {
     const char* json =
         "{"
         "\"model\":\"deepseek-r1\","
-        "\"prompt\":\"explain simple what minecraft hypixel bedwars is!  make use of paragraphs DO NOT USE MARKDOWN AND ONLY ASCII AND WRITE IN GERMAN\","
+        "\"prompt\":\"explain simple what the sport calestehnics is!  make use of paragraphs DO NOT USE MARKDOWN AND ONLY ASCII AND WRITE IN GERMAN\","
         "\"stream\":false"
         "}";
 
@@ -367,7 +446,7 @@ int32_t main(void) {
         fprintf(stderr, "Response: %s\n", response);
     }
     else {
-        response = "Pointers in C are variables that store memory addresses. When used with structures, they allow efficient access to structure members and enable dynamic memory management. Here's a breakdown:\n\n### 1. **Structure Definition**\n   ```c\n   struct Person {\n       char name[50];\n       int age;\n   };\n   ```\n\n### 2. **Structure Variable vs. Pointer to Structure**\n   - **Direct Access**: `struct Person john = {\"John\", 30}; john.age++;`  \n     Access members with `.` operator.\n   - **Pointer Access**: `struct Person *ptr = \u0026john; ptr-\u003eage++;`  \n     Use `-\u003e` (combines dereferencing and member access).\n\n### 3. **Dereferencing with `-\u003e`**\n   - The `-\u003e` operator is shorthand for `(*ptr).member`.  \n     Example: `ptr-\u003eage` is equivalent to `(*ptr).age`.\n\n### 4. **Dynamic Memory Allocation**\n   - Allocate memory for a structure dynamically:\n     ```c\n     struct Person *ptr = malloc(sizeof(struct Person));\n     ```\n   - Check allocation success:\n     ```c\n     if (ptr == NULL) { /* Handle error */ }\n     ```\n   - Free memory when done:\n     ```c\n     free(ptr);\n     ```\n\n### 5. **Function Parameters**\n   - Pass structure pointers to functions to modify the original structure without returning it:\n     ```c\n     void updateAge(struct Person *p) {\n         p-\u003eage++;\n     }\n     ```\n\n### 6. **Linked Structures**\n   - Pointers enable linked data structures (e.g., linked lists):\n     ```c\n     struct Node {\n         int data;\n         struct Node *next;\n     };\n\n     struct Node *head = malloc(sizeof(struct Node));\n     head-\u003enext = malloc(sizeof(struct Node));\n     head-\u003enext-\u003enext = NULL;\n     ```\n\n### 7. **Memory Layout**\n   - Structures are stored in contiguous memory. Pointers reference the entire structure, not individual members.\n\n### 8. **Key Rules**\n   - Use `\u0026` to get a pointer to a structure.\n   - Use `-\u003e` to access members via a pointer.\n   - Always free dynamically allocated memory to avoid leaks.\n\n### Example Code:\n```c\n#include \u003cstdio.h\u003e\n#include \u003cstdlib.h\u003e\n#include \u003cstring.h\u003e\n\nstruct Employee {\n    char name[50];\n    int id;\n};\n\nvoid printEmployee(struct Employee *emp) {\n    printf(\"Name: %s, ID: %d\\n\", emp-\u003ename, emp-\u003eid);\n}\n\nint main() {\n    struct Employee emp1 = {\"Alice\", 101};\n    struct Employee *emp_ptr = \u0026emp1;\n\n    printEmployee(emp_ptr); // Output: Name: Alice, ID: 101\n\n    // Dynamic allocation\n    struct Employee *emp2 = malloc(sizeof(struct Employee));\n    if (emp2 == NULL) exit(1);\n    strcpy(emp2-\u003ename, \"Bob\");\n    emp2-\u003eid = 102;\n    printEmployee(emp2);\n    free(emp2);\n\n    return 0;\n}\n```\n\nPointers to structures streamline memory usage, enable efficient data manipulation, and are essential for advanced C programming.";
+        response = "Okay, hier ist eine einfache Erklärung des Sports \"Caletics\" in einfachem Deutsch, in Absätzen ohne Sonderzeichen:\n\nCaletics ist ein Krafttrainingssystem, das man zu Hause machen kann.\n\nMan benutzt dafür ein bestimmtes Gerät, das wie eine Stange mit zwei Armen aussehen könnte, an denen man Gewichte anbringen kann. Es gibt verschiedene Arten von Caletics-Geräten, aber sie haben meist etwas Gemeinsames.\n\nDie besondere Sache an Caletics ist, dass es oft mit Übungen wie Deadlifts, Bench Press (Brustdrücken) und Kniebeugen funktioniert. Aber anders als mit traditionellen Barren oder Kettlebells, wird beim Heben und Senken der Gewichte oft mit einem speziellen Seil gearbeitet. Dieses Seil verhindert, dass die Gewichte zu schnell nach unten fallen.\n\nDas Training auf dem Caletics-Gerät soll besonders effektiv sein für das Muskelaufbau und für das Vermeiden von Rückenverletzungen, besonders wenn man diese Übungen selbst zu Hause versuchen möchte. Es wird von Jonas Steinhoff, einem deutschen Profikletterer, stark beworben.\n\nMan kann damit viele verschiedene Muskelgruppen trainieren, ohne viel Equipment zu benötigen.";
     }
 
     size_t len = strlen(response);
@@ -394,7 +473,7 @@ int32_t main(void) {
 
     const uint32_t offset_x = 58;
     const uint32_t offset_y = 58;
-    const uint32_t char_size = 58;
+    const float char_size = 58.601f;
     const uint32_t char_size_squared = char_size * char_size;
     const uint32_t img_size = char_size_squared * channels;
     const uint32_t tiles = asci_string_len - 1;
@@ -444,9 +523,8 @@ int32_t main(void) {
         else info.in_word = false;
  
         // check end to dash
-        const float relative_font_width = get_char_width(asci_string[i]) / 1000.0f;
-        const uint32_t pixels_char_horizontal = info.char_size * relative_font_width;
-        if (info.current_x + pixels_char_horizontal * 2 >= info.max_pixels_horizontal && info.in_word) {
+        const uint32_t pixels_char_horizontal = get_char_width(asci_string[i]);
+        if (info.current_x + pixels_char_horizontal * 4 >= info.usable_pixels_horizontal && info.in_word) {
             add_char('-', &info);
             info.current_x = 0;
             info.current_y += info.char_size;
