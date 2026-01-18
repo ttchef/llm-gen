@@ -4,6 +4,7 @@
 #include <stddef.h>
 #include <string.h>
 #include <stdint.h>
+#include <stdbool.h> 
 #include <curl/curl.h>
 #include <wsJson/ws_json.h>
 
@@ -13,15 +14,47 @@
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "stb_image_write.h"
 
+const bool generate_ai_answer = false;
+
+const int32_t arial_widths[128] = {
+    ['A'] = 667, ['B'] = 667, ['C'] = 722, ['D'] = 722, ['E'] = 667,
+    ['F'] = 611, ['G'] = 778, ['H'] = 722, ['I'] = 278, ['J'] = 500,
+    ['K'] = 667, ['L'] = 556, ['M'] = 833, ['N'] = 722, ['O'] = 778,
+    ['P'] = 667, ['Q'] = 778, ['R'] = 722, ['S'] = 667, ['T'] = 611,
+    ['U'] = 722, ['V'] = 667, ['W'] = 944, ['X'] = 667, ['Y'] = 667,
+    ['Z'] = 611,
+    
+    ['a'] = 556, ['b'] = 556, ['c'] = 500, ['d'] = 556, ['e'] = 556,
+    ['f'] = 278, ['g'] = 556, ['h'] = 556, ['i'] = 222, ['j'] = 222,
+    ['k'] = 500, ['l'] = 222, ['m'] = 833, ['n'] = 556, ['o'] = 556,
+    ['p'] = 556, ['q'] = 556, ['r'] = 333, ['s'] = 500, ['t'] = 278,
+    ['u'] = 556, ['v'] = 500, ['w'] = 722, ['x'] = 500, ['y'] = 500,
+    ['z'] = 500,
+    
+    ['0'] = 556, ['1'] = 556, ['2'] = 556, ['3'] = 556, ['4'] = 556,
+    ['5'] = 556, ['6'] = 556, ['7'] = 556, ['8'] = 556, ['9'] = 556,
+    
+    [' '] = 678,  
+    ['!'] = 278, ['"'] = 355, ['#'] = 556, ['$'] = 556, ['%'] = 889,
+    ['&'] = 667, ['\''] = 191, ['('] = 333, [')'] = 333, ['*'] = 389,
+    ['+'] = 584, [','] = 278, ['-'] = 333, ['.'] = 278, ['/'] = 278,
+    [':'] = 278, [';'] = 278, ['<'] = 584, ['='] = 584, ['>'] = 584,
+    ['?'] = 556, ['@'] = 1015,
+    ['['] = 278, ['\\'] = 278, [']'] = 278, ['^'] = 469, ['_'] = 556,
+    ['`'] = 333, ['{'] = 334, ['|'] = 260, ['}'] = 334, ['~'] = 584
+};
+
 struct Memory {
     uint8_t* data;
     size_t size;
 };
 
 struct TileInfo {
-    uint32_t tile_index;
+    uint32_t current_x;
+    uint32_t current_y;
     uint8_t* input;
     uint8_t* output;
+    uint8_t character;
     int32_t input_width;
     int32_t tiles;
     int32_t base_x;
@@ -30,7 +63,7 @@ struct TileInfo {
     int32_t offset_y;
     int32_t char_size;
     int32_t channels;
-    int32_t max_tiles_horizontal;
+    int32_t max_pixels_horizontal;
     int32_t table_sym_horizontal;
 };
 
@@ -47,6 +80,33 @@ static size_t write_callback(void *contents, size_t size, size_t nmemb, void *us
     mem->data[mem->size] = 0;
 
     return realsize;
+}
+
+static int32_t count_rows(const char* text, size_t len, int32_t char_size, int32_t pixels_horizontal) {
+    int32_t current_x = 0;
+    int32_t rows = 1;
+
+    for (size_t i = 0; i < len; i++) {
+        if (text[i] == '\n' || (text[i] == '\\' && text[i + 1] == 'n')) {
+            if (text[i] == '\\') i++;
+            rows++;
+            current_x = 0;
+            continue;
+        }
+
+        float relative_width = arial_widths[(uint8_t)text[i]] / 1000.0f;
+        int32_t pixels_char = char_size * relative_width;
+
+        if (current_x + pixels_char >= pixels_horizontal) {
+            rows++;
+            current_x = pixels_char;
+        }
+        else {
+            current_x += pixels_char;
+        }
+    }
+
+    return rows;
 }
 
 static int32_t char_to_tile_index(char c) {
@@ -92,29 +152,33 @@ static int32_t char_to_tile_index(char c) {
 }
 
 static void add_tile(struct TileInfo* info) {
-    const uint32_t tile_x = info->tile_index % info->max_tiles_horizontal;
-    const uint32_t tile_y = info->tile_index / info->max_tiles_horizontal;
+    float relative_font_width = arial_widths[info->character] / 1000.0f;
+    int32_t pixels_char_horizontal = info->char_size * relative_font_width;
 
     for (int32_t y = 0; y < info->char_size; y++) {
-        for (int32_t x = 0; x < info->char_size; x++) {
+        for (int32_t x = 0; x < pixels_char_horizontal; x++) {
             for (int32_t c = 0; c < info->channels; c++) {
-                uint32_t dst_x = tile_x * info->char_size + x;
-                uint32_t dst_y = tile_y * info->char_size + y;
-                uint32_t dst_offset = (dst_y * info->char_size * info->max_tiles_horizontal + dst_x) * info->channels + c;
+                uint32_t dst_x = info->current_x + x;
+                uint32_t dst_y = info->current_y + y;
+                uint32_t dst_offset = (dst_y * info->max_pixels_horizontal + dst_x) * info->channels + c;
 
-                int32_t total_size = info->char_size * info->max_tiles_horizontal * 
-                     info->char_size * ((info->tiles + info->max_tiles_horizontal - 1) / info->max_tiles_horizontal) * 
-                     info->channels;
-                if (dst_offset >= total_size) {
-                    fprintf(stderr, "OUT OF BOUNDS! tile=%d, offset=%d, max=%d\n", 
-                            info->tile_index, dst_offset, total_size);
-                }
+                uint32_t src_x = info->offset_x + x + pixels_char_horizontal / 2;
+                uint32_t src_y = info->offset_y + y;
+                uint32_t src_offset = (src_y * info->input_width + src_x) * info->channels + c;
 
-                uint32_t src_offset = ((info->offset_y + y) * info->input_width + (info->offset_x + x)) * info->channels + c;
                 uint8_t src_val = info->input[src_offset];
-                info->output[dst_offset] = src_val < 120 ? 0 : 255;
+                if (src_val < 120) info->output[dst_offset] = src_val;
             }
         }
+    }
+
+    uint32_t new_x = info->current_x + info->char_size * relative_font_width;
+    if (new_x >= info->max_pixels_horizontal) {
+        info->current_y += info->char_size;
+        info->current_x = 0;
+    }
+    else {
+        info->current_x = new_x;
     }
 }
 
@@ -122,6 +186,7 @@ static void add_char(char c, struct TileInfo* info) {
     int32_t index = char_to_tile_index(c);
     info->offset_x = info->base_x + (index % info->table_sym_horizontal) * info->char_size;
     info->offset_y = info->base_y + (index / info->table_sym_horizontal) * info->char_size;
+    info->character = c;
 
     add_tile(info);
 
@@ -175,12 +240,12 @@ static void skip_unicode(char* out, size_t* size, const char* input) {
     *size = out_index + 1;
 }
 
-int main(void) {
+static wsJson* get_ai_json() {
     CURL* curl;
     CURLcode res;
 
     struct Memory chunk = {0};
-    
+
     const char* json =
         "{"
         "\"model\":\"deepseek-r1\","
@@ -192,7 +257,7 @@ int main(void) {
     curl = curl_easy_init();
     if (!curl) {
         fprintf(stderr, "failed to init curl\n");
-        return 1;
+        return NULL;
     }
 
     struct curl_slist* headers = NULL;
@@ -208,79 +273,13 @@ int main(void) {
     res = curl_easy_perform(curl);
     if (res != CURLE_OK) {
         fprintf(stderr, "curl error: %s\n", curl_easy_strerror(res));
-    }
-    else {
-        const char* json_string_data = (const char*)chunk.data;
-        wsJson* root = wsStringToJson(&json_string_data);
-        if (!root) {
-            fprintf(stderr, "error: json is NULL\n");
-            exit(1);
-        }
-        const char* response = wsJsonGetString(root, "response");
-        fprintf(stderr, "Response: %s\n", response);
-        
-        size_t len = strlen(response);
 
-        // Load Image 
-        int32_t width, height, channels;
-        uint8_t* data = stbi_load("test.jpeg", &width, &height, &channels, 0);
-        if (!data) {
-            fprintf(stderr, "failed to load image\n");
-            exit(1);
-        }
-        printf("Channels: %d\n", channels);
+        curl_slist_free_all(headers);
+        curl_easy_cleanup(curl);
 
-        size_t asci_string_len;
-        skip_unicode(NULL, &asci_string_len, response);
-        char asci_string[asci_string_len];
-        skip_unicode(asci_string, &asci_string_len, response);
-        
-        fprintf(stderr, "%s\n", asci_string);
-        fprintf(stderr, "str len %zu\n", asci_string_len);
-
-        const int32_t offset_x = 57;
-        const int32_t offset_y = 57;
-        const int32_t char_size = 58;
-        const int32_t char_size_squared = char_size * char_size;
-        const int32_t img_size = char_size_squared * channels;
-        const int32_t tiles = asci_string_len - 1;
-        const int32_t tiles_horizontal = 50;
-
-        const int32_t rows = (tiles + tiles_horizontal - 1) / tiles_horizontal;
-        int32_t grid_width = char_size * tiles_horizontal;
-        int32_t grid_height = char_size * rows;
-        size_t total_bytes = (size_t)grid_width * (size_t)grid_height * (size_t)channels;
-        uint8_t* crop_img = malloc(total_bytes);
-        memset(crop_img, 255, grid_width * grid_height * channels);
-
-        struct TileInfo info = {
-            .input = data,
-            .output = crop_img,
-            .input_width = width,
-            .tiles = tiles,
-            .base_x = offset_x,
-            .base_y = offset_y,
-            .offset_x = offset_x,
-            .offset_y = offset_y,
-            .char_size = char_size,
-            .channels = channels,
-            .max_tiles_horizontal = tiles_horizontal,
-            .table_sym_horizontal = 26,
-        };
-
-        for (int32_t i = 0; i < tiles; i++) {
-            if (asci_string[i] == '\\' && asci_string[i + 1] == 'n') {
-                i += 2;
-                while (i % info.max_tiles_horizontal != 0) i++;
-            }
-   
-            info.tile_index = i; 
-            add_char(asci_string[i], &info);
-        }
-       
-        stbi_write_jpg("damn.jpg", char_size * tiles_horizontal, char_size * rows, channels, crop_img, 90);
-
-        wsJsonFree(root);
+        free(chunk.data);
+        curl_global_cleanup();
+        return NULL;
     }
 
     curl_slist_free_all(headers);
@@ -288,6 +287,83 @@ int main(void) {
 
     free(chunk.data);
     curl_global_cleanup();
+
+    const char* json_string_data = (const char*)chunk.data;
+    wsJson* root = wsStringToJson(&json_string_data);
+    return root;
+}
+
+int main(void) {
+    char* response = NULL;
+    if (generate_ai_answer) {
+        wsJson* root = get_ai_json();
+        response = wsJsonGetString(root, "response");
+        fprintf(stderr, "Response: %s\n", response);
+        wsJsonFree(root);
+    }
+    else {
+        response = "Yooo im good how are you\n12345:!!!?<>";
+    }
+
+    size_t len = strlen(response);
+
+    // Load Image 
+    int32_t width, height, channels;
+    uint8_t* data = stbi_load("test.jpeg", &width, &height, &channels, 0);
+    if (!data) {
+        fprintf(stderr, "failed to load image\n");
+        exit(1);
+    }
+    printf("Channels: %d\n", channels);
+
+    size_t asci_string_len;
+    skip_unicode(NULL, &asci_string_len, response);
+    char asci_string[asci_string_len];
+    skip_unicode(asci_string, &asci_string_len, response);
+
+    fprintf(stderr, "%s\n", asci_string);
+    fprintf(stderr, "str len %zu\n", asci_string_len);
+
+    const int32_t offset_x = 57;
+    const int32_t offset_y = 57;
+    const int32_t char_size = 58;
+    const int32_t char_size_squared = char_size * char_size;
+    const int32_t img_size = char_size_squared * channels;
+    const int32_t tiles = asci_string_len - 1;
+    const int32_t pixels_horizontal = 50 * char_size;
+
+    int32_t grid_width = pixels_horizontal;
+    int32_t grid_height = char_size * count_rows(asci_string, asci_string_len, char_size, pixels_horizontal);
+    size_t total_bytes = (size_t)grid_width * (size_t)grid_height * (size_t)channels;
+    uint8_t* crop_img = malloc(total_bytes);
+    memset(crop_img, 255, grid_width * grid_height * channels);
+
+    struct TileInfo info = {
+        .input = data,
+        .output = crop_img,
+        .input_width = width,
+        .tiles = tiles,
+        .base_x = offset_x,
+        .base_y = offset_y,
+        .offset_x = offset_x,
+        .offset_y = offset_y,
+        .char_size = char_size,
+        .channels = channels,
+        .max_pixels_horizontal = pixels_horizontal,
+        .table_sym_horizontal = 26,
+    };
+
+    for (int32_t i = 0; i < tiles; i++) {
+        if (asci_string[i] == '\n' || (asci_string[i] == '\\' && asci_string[i + 1] == 'n')) {
+            if (asci_string[i] == '\\') i++;
+            info.current_y += info.char_size;
+            info.current_x = 0;
+            i++;
+        }
+        add_char(asci_string[i], &info);
+    }
+
+    stbi_write_jpg("damn.jpg", grid_width, grid_height, channels, crop_img, 90);
 
     return 0;
 }
