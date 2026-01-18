@@ -24,7 +24,7 @@ const int32_t arial_widths[128] = {
     ['U'] = 722, ['V'] = 667, ['W'] = 944, ['X'] = 667, ['Y'] = 867,
     ['Z'] = 611,
     
-    ['a'] = 456, ['b'] = 556, ['c'] = 500, ['d'] = 556, ['e'] = 556,
+    ['a'] = 656, ['b'] = 556, ['c'] = 500, ['d'] = 556, ['e'] = 556,
     ['f'] = 278, ['g'] = 556, ['h'] = 456, ['i'] = 222, ['j'] = 322,
     ['k'] = 500, ['l'] = 422, ['m'] = 633, ['n'] = 556, ['o'] = 456,
     ['p'] = 556, ['q'] = 556, ['r'] = 333, ['s'] = 500, ['t'] = 378,
@@ -162,6 +162,11 @@ static void add_tile(struct TileInfo* info) {
     const uint32_t pixels_char_horizontal = info->char_size * relative_font_width;
     const uint32_t atlas_center_offset = info->char_size / 2 - pixels_char_horizontal / 2;
 
+    if (info->current_x + pixels_char_horizontal >= info->max_pixels_horizontal) {
+        info->current_y += info->char_size;
+        info->current_x = 0;
+    }
+
     for (int32_t y = 0; y < info->char_size; y++) {
         for (int32_t x = 0; x < pixels_char_horizontal; x++) {
             for (int32_t c = 0; c < info->channels; c++) {
@@ -179,14 +184,7 @@ static void add_tile(struct TileInfo* info) {
         }
     }
 
-    uint32_t new_x = info->current_x + info->char_size * relative_font_width;
-    if (new_x >= info->max_pixels_horizontal) {
-        info->current_y += info->char_size;
-        info->current_x = 0;
-    }
-    else {
-        info->current_x = new_x;
-    }
+    info->current_x += pixels_char_horizontal;
 }
 
 static void add_char(uint8_t c, struct TileInfo* info) {
@@ -374,7 +372,7 @@ int main(void) {
             if (asci_string[i] == '\\') i++;
             info.current_y += info.char_size;
             info.current_x = 0;
-            i++;
+            continue;
         }
         add_char((uint8_t)asci_string[i], &info);
     }
