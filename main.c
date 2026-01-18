@@ -51,6 +51,7 @@ const int32_t font_widths[256] = {
     [0xDF] = 556, // ß
 };
 
+
 struct Memory {
     uint8_t* data;
     size_t size;
@@ -62,6 +63,7 @@ struct TileInfo {
     uint8_t* input;
     uint8_t* output;
     uint8_t character;
+    bool in_word;
     int32_t input_width;
     int32_t tiles;
     int32_t base_x;
@@ -78,6 +80,8 @@ struct TileInfo {
     int32_t padding_y;
     int32_t rows_count;
 };
+
+static void add_char(uint8_t c, struct TileInfo* info);
 
 static size_t write_callback(void *contents, size_t size, size_t nmemb, void *userp) {
     size_t realsize = size * nmemb;
@@ -177,24 +181,24 @@ static int32_t char_to_tile_index(uint8_t c) {
     return 52;
 }
 
+
 static void add_tile(struct TileInfo* info) {
     const float relative_font_width = get_char_width(info->character) / 1000.0f;
     const uint32_t pixels_char_horizontal = info->char_size * relative_font_width;
     const uint32_t atlas_center_offset = info->char_size / 2 - pixels_char_horizontal / 2;
 
-    const uint32_t padding_x = info->current_x == 0 ? info->padding_x : 0;
-    const uint32_t padding_y = (info->current_y == 0 || info->current_y == info->rows_count - 1) ? info->padding_y : 0;
-
     if (info->current_x + pixels_char_horizontal >= info->max_pixels_horizontal) {
-        info->current_y += info->char_size + padding_y;
+        info->current_y += info->char_size;
         info->current_x = 0;
     }
+
+    if (info->current_x == 0) info->current_x = info->padding_x;
 
     for (int32_t y = 0; y < info->char_size; y++) {
         for (int32_t x = 0; x < pixels_char_horizontal; x++) {
             for (int32_t c = 0; c < info->channels; c++) {
-                uint32_t dst_x = info->current_x + x + padding_x;
-                uint32_t dst_y = info->current_y + y + padding_y;
+                uint32_t dst_x = info->current_x + x;
+                uint32_t dst_y = info->current_y + y;
                 uint32_t dst_offset = (dst_y * info->max_pixels_horizontal + dst_x) * info->channels + c;
 
                 uint32_t src_x = info->offset_x + x + atlas_center_offset;
@@ -207,7 +211,7 @@ static void add_tile(struct TileInfo* info) {
         }
     }
 
-    info->current_x += pixels_char_horizontal + padding_x;
+    info->current_x += pixels_char_horizontal;
 }
 
 static void add_char(uint8_t c, struct TileInfo* info) {
@@ -267,8 +271,8 @@ static void skip_unicode(char* out, size_t* size, const char* input) {
 
                 if (codepoint < 256 && out && out_index < *size - 1) {
                     out[out_index] = (uint8_t)codepoint;
-                    out_index++;
                 }
+                out_index++;
                 i += 2;
             }
             else {
@@ -289,7 +293,7 @@ static void skip_unicode(char* out, size_t* size, const char* input) {
     *size = out_index + 1;
 }
 
-static void draw_square_background(struct TileInfo* info) {
+static void draw_background(struct TileInfo* info, bool grid) {
     // Horizontal
     for (int32_t y = 0; y < info->grid_height; y += info->char_size) {
         for (int32_t x = 0; x < info->grid_width; x++) {
@@ -299,6 +303,7 @@ static void draw_square_background(struct TileInfo* info) {
         }
     }
 
+    if (!grid) return;
     for (int32_t y = 0; y < info->grid_height; y++) {
         for (int32_t x = 0; x < info->grid_width; x += info->char_size) {
             for (int32_t c = 0; c < info->channels; c++) {
@@ -317,7 +322,7 @@ static wsJson* get_ai_json() {
     const char* json =
         "{"
         "\"model\":\"deepseek-r1\","
-        "\"prompt\":\"explain simple what politics is!  make use of paragraphs DO NOT USE MARKDOWN AND ONLY ASCII AND WRITE IN GERMAN\","
+        "\"prompt\":\"explain simple what minecraft hypixel bedwars is!  make use of paragraphs DO NOT USE MARKDOWN AND ONLY ASCII AND WRITE IN GERMAN\","
         "\"stream\":false"
         "}";
 
@@ -386,7 +391,7 @@ int main(void) {
 
     size_t asci_string_len;
     skip_unicode(NULL, &asci_string_len, response);
-    char asci_string[asci_string_len];
+    uint8_t asci_string[asci_string_len];
     skip_unicode(asci_string, &asci_string_len, response);
 
     // free old string resources
@@ -406,7 +411,7 @@ int main(void) {
     int32_t rows = count_rows(asci_string, asci_string_len, char_size, pixels_horizontal);
     int32_t grid_width = pixels_horizontal;
     int32_t grid_height = char_size * rows;
-    size_t total_bytes = (size_t)grid_width * (size_t)grid_height * (size_t)channels;
+    size_t total_bytes = (size_t)grid_width * (size_t)grid_height * (size_t)channels;;
     uint8_t* crop_img = malloc(total_bytes);
     memset(crop_img, 255, grid_width * grid_height * channels);
 
@@ -430,7 +435,7 @@ int main(void) {
         .rows_count = rows,
     };
 
-    draw_square_background(&info);
+    draw_background(&info, false);
     for (int32_t i = 0; i < tiles; i++) {
         if (asci_string[i] == '\n' || (asci_string[i] == '\\' && asci_string[i + 1] == 'n')) {
             if (asci_string[i] == '\\') i++;
@@ -438,7 +443,18 @@ int main(void) {
             info.current_x = 0;
             continue;
         }
-        add_char((uint8_t)asci_string[i], &info);
+
+        if (asci_string[i] && asci_string[i] != ' ') info.in_word = true;
+ 
+        // check end to dash
+        const float relative_font_width = get_char_width(asci_string[i]) / 1000.0f;
+        const uint32_t pixels_char_horizontal = info.char_size * relative_font_width;
+        if (info.current_x + pixels_char_horizontal * 2 >= info.max_pixels_horizontal && info.in_word) {
+            add_char('-', &info);
+            info.current_y += info.char_size;
+        }
+
+        add_char(asci_string[i], &info);
     }
 
     stbi_write_jpg("damn.jpg", grid_width, grid_height, channels, crop_img, 90);
