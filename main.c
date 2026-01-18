@@ -14,33 +14,33 @@
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "stb_image_write.h"
 
-const bool generate_ai_answer = true;
+const bool generate_ai_answer = false;
 
 const int32_t arial_widths[128] = {
     ['A'] = 667, ['B'] = 667, ['C'] = 722, ['D'] = 722, ['E'] = 667,
     ['F'] = 611, ['G'] = 778, ['H'] = 722, ['I'] = 348, ['J'] = 500,
-    ['K'] = 667, ['L'] = 556, ['M'] = 833, ['N'] = 722, ['O'] = 778,
+    ['K'] = 667, ['L'] = 556, ['M'] = 833, ['N'] = 722, ['O'] = 878,
     ['P'] = 667, ['Q'] = 778, ['R'] = 722, ['S'] = 667, ['T'] = 611,
     ['U'] = 722, ['V'] = 667, ['W'] = 944, ['X'] = 667, ['Y'] = 867,
     ['Z'] = 611,
     
-    ['a'] = 656, ['b'] = 556, ['c'] = 500, ['d'] = 556, ['e'] = 556,
+    ['a'] = 556, ['b'] = 556, ['c'] = 500, ['d'] = 556, ['e'] = 556,
     ['f'] = 278, ['g'] = 556, ['h'] = 456, ['i'] = 222, ['j'] = 322,
-    ['k'] = 500, ['l'] = 422, ['m'] = 633, ['n'] = 556, ['o'] = 456,
-    ['p'] = 556, ['q'] = 556, ['r'] = 333, ['s'] = 500, ['t'] = 378,
-    ['u'] = 556, ['v'] = 500, ['w'] = 722, ['x'] = 500, ['y'] = 500,
-    ['z'] = 500,
+    ['k'] = 500, ['l'] = 422, ['m'] = 633, ['n'] = 556, ['o'] = 576,
+    ['p'] = 556, ['q'] = 556, ['r'] = 583, ['s'] = 530, ['t'] = 478,
+    ['u'] = 556, ['v'] = 700, ['w'] = 722, ['x'] = 500, ['y'] = 650,
+    ['z'] = 800,
     
-    ['0'] = 556, ['1'] = 556, ['2'] = 556, ['3'] = 556, ['4'] = 556,
+    ['0'] = 756, ['1'] = 556, ['2'] = 556, ['3'] = 556, ['4'] = 556,
     ['5'] = 556, ['6'] = 556, ['7'] = 556, ['8'] = 556, ['9'] = 556,
     
-    [' '] = 478,  
+    [' '] = 578,  
     ['!'] = 278, ['"'] = 355, ['#'] = 856, ['$'] = 556, ['%'] = 889,
-    ['&'] = 667, ['\''] = 191, ['('] = 633, [')'] = 633, ['*'] = 589,
+    ['&'] = 667, ['\''] = 191, ['('] = 633, [')'] = 633, ['*'] = 629,
     ['+'] = 784, [','] = 278, ['-'] = 333, ['.'] = 278, ['/'] = 878,
     [':'] = 378, [';'] = 378, ['<'] = 584, ['='] = 584, ['>'] = 584,
     ['?'] = 556, ['@'] = 1015,
-    ['['] = 878, ['\\'] = 878, [']'] = 878, ['^'] = 469, ['_'] = 556,
+    ['['] = 578, ['\\'] = 878, [']'] = 578, ['^'] = 469, ['_'] = 556,
     ['`'] = 333, ['{'] = 454, ['|'] = 260, ['}'] = 454, ['~'] = 584
 };
 
@@ -65,6 +65,8 @@ struct TileInfo {
     int32_t channels;
     int32_t max_pixels_horizontal;
     int32_t table_sym_horizontal;
+    int32_t grid_width;
+    int32_t grid_height;
 };
 
 static size_t write_callback(void *contents, size_t size, size_t nmemb, void *userp) {
@@ -150,9 +152,10 @@ static int32_t char_to_tile_index(char c) {
         case '$': return 79;
         case '^': return 80;
         case '_': return 81;
+        case '+': return 82;
     }
     
-    if (c >= '0' && c <= '9') return 82 + c - '0';
+    if (c >= '0' && c <= '9') return 83 + c - '0';
 
     return 52;
 }
@@ -251,6 +254,25 @@ static void skip_unicode(char* out, size_t* size, const char* input) {
     *size = out_index + 1;
 }
 
+static void draw_square_background(struct TileInfo* info) {
+    // Horizontal
+    for (int32_t y = 0; y < info->grid_height; y += 50) {
+        for (int32_t x = 0; x < info->grid_width; x++) {
+            for (int32_t c = 0; c < info->channels; c++) {
+                info->output[(y * info->max_pixels_horizontal + x) * info->channels + c] = 211;
+            }
+        }
+    }
+
+    for (int32_t y = 0; y < info->grid_height; y++) {
+        for (int32_t x = 0; x < info->grid_width; x += 50) {
+            for (int32_t c = 0; c < info->channels; c++) {
+                info->output[(y * info->max_pixels_horizontal + x) * info->channels + c] = 211;
+            }
+        }
+    }
+}
+
 static wsJson* get_ai_json() {
     CURL* curl;
     CURLcode res;
@@ -313,7 +335,7 @@ int main(void) {
         fprintf(stderr, "Response: %s\n", response);
     }
     else {
-        response = "Yooo im good how are you\n12345:!!!?<>";
+        response = "Pointers in C are variables that store memory addresses. When used with structures, they allow efficient access to structure members and enable dynamic memory management. Here's a breakdown:\n\n### 1. **Structure Definition**\n   ```c\n   struct Person {\n       char name[50];\n       int age;\n   };\n   ```\n\n### 2. **Structure Variable vs. Pointer to Structure**\n   - **Direct Access**: `struct Person john = {\"John\", 30}; john.age++;`  \n     Access members with `.` operator.\n   - **Pointer Access**: `struct Person *ptr = \u0026john; ptr-\u003eage++;`  \n     Use `-\u003e` (combines dereferencing and member access).\n\n### 3. **Dereferencing with `-\u003e`**\n   - The `-\u003e` operator is shorthand for `(*ptr).member`.  \n     Example: `ptr-\u003eage` is equivalent to `(*ptr).age`.\n\n### 4. **Dynamic Memory Allocation**\n   - Allocate memory for a structure dynamically:\n     ```c\n     struct Person *ptr = malloc(sizeof(struct Person));\n     ```\n   - Check allocation success:\n     ```c\n     if (ptr == NULL) { /* Handle error */ }\n     ```\n   - Free memory when done:\n     ```c\n     free(ptr);\n     ```\n\n### 5. **Function Parameters**\n   - Pass structure pointers to functions to modify the original structure without returning it:\n     ```c\n     void updateAge(struct Person *p) {\n         p-\u003eage++;\n     }\n     ```\n\n### 6. **Linked Structures**\n   - Pointers enable linked data structures (e.g., linked lists):\n     ```c\n     struct Node {\n         int data;\n         struct Node *next;\n     };\n\n     struct Node *head = malloc(sizeof(struct Node));\n     head-\u003enext = malloc(sizeof(struct Node));\n     head-\u003enext-\u003enext = NULL;\n     ```\n\n### 7. **Memory Layout**\n   - Structures are stored in contiguous memory. Pointers reference the entire structure, not individual members.\n\n### 8. **Key Rules**\n   - Use `\u0026` to get a pointer to a structure.\n   - Use `-\u003e` to access members via a pointer.\n   - Always free dynamically allocated memory to avoid leaks.\n\n### Example Code:\n```c\n#include \u003cstdio.h\u003e\n#include \u003cstdlib.h\u003e\n#include \u003cstring.h\u003e\n\nstruct Employee {\n    char name[50];\n    int id;\n};\n\nvoid printEmployee(struct Employee *emp) {\n    printf(\"Name: %s, ID: %d\\n\", emp-\u003ename, emp-\u003eid);\n}\n\nint main() {\n    struct Employee emp1 = {\"Alice\", 101};\n    struct Employee *emp_ptr = \u0026emp1;\n\n    printEmployee(emp_ptr); // Output: Name: Alice, ID: 101\n\n    // Dynamic allocation\n    struct Employee *emp2 = malloc(sizeof(struct Employee));\n    if (emp2 == NULL) exit(1);\n    strcpy(emp2-\u003ename, \"Bob\");\n    emp2-\u003eid = 102;\n    printEmployee(emp2);\n    free(emp2);\n\n    return 0;\n}\n```\n\nPointers to structures streamline memory usage, enable efficient data manipulation, and are essential for advanced C programming.";
     }
 
     size_t len = strlen(response);
@@ -338,16 +360,17 @@ int main(void) {
     fprintf(stderr, "%s\n", asci_string);
     fprintf(stderr, "str len %zu\n", asci_string_len);
 
-    const int32_t offset_x = 57;
-    const int32_t offset_y = 57;
+    const int32_t offset_x = 58;
+    const int32_t offset_y = 58;
     const int32_t char_size = 58;
     const int32_t char_size_squared = char_size * char_size;
     const int32_t img_size = char_size_squared * channels;
     const int32_t tiles = asci_string_len - 1;
     const int32_t pixels_horizontal = 50 * char_size;
 
+    int32_t rows = count_rows(asci_string, asci_string_len, char_size, pixels_horizontal);
     int32_t grid_width = pixels_horizontal;
-    int32_t grid_height = char_size * count_rows(asci_string, asci_string_len, char_size, pixels_horizontal);
+    int32_t grid_height = char_size * rows;
     size_t total_bytes = (size_t)grid_width * (size_t)grid_height * (size_t)channels;
     uint8_t* crop_img = malloc(total_bytes);
     memset(crop_img, 255, grid_width * grid_height * channels);
@@ -365,8 +388,11 @@ int main(void) {
         .channels = channels,
         .max_pixels_horizontal = pixels_horizontal,
         .table_sym_horizontal = 26,
+        .grid_width = grid_width,
+        .grid_height = grid_height,
     };
 
+    draw_square_background(&info);
     for (int32_t i = 0; i < tiles; i++) {
         if (asci_string[i] == '\n' || (asci_string[i] == '\\' && asci_string[i + 1] == 'n')) {
             if (asci_string[i] == '\\') i++;
