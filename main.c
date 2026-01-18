@@ -64,20 +64,21 @@ struct TileInfo {
     uint8_t* output;
     uint8_t character;
     bool in_word;
-    int32_t input_width;
-    int32_t tiles;
-    int32_t base_x;
-    int32_t base_y;
-    int32_t offset_x;
-    int32_t offset_y;
-    int32_t char_size;
-    int32_t channels;
-    int32_t max_pixels_horizontal;
-    int32_t table_sym_horizontal;
-    int32_t grid_width;
-    int32_t grid_height;
-    int32_t padding_x; // padding_y is hardcoded
-    int32_t rows_count;
+    uint32_t input_width;
+    uint32_t tiles;
+    uint32_t base_x;
+    uint32_t base_y;
+    uint32_t offset_x;
+    uint32_t offset_y;
+    uint32_t char_size;
+    uint32_t channels;
+    uint32_t usable_pixels_horizontal;
+    uint32_t max_pixels_horizontal;
+    uint32_t table_sym_horizontal;
+    uint32_t grid_width;
+    uint32_t grid_height;
+    uint32_t padding_x; // padding_y is hardcoded
+    uint32_t rows_count;
 };
 
 static void add_char(uint8_t c, struct TileInfo* info);
@@ -185,7 +186,7 @@ static void add_tile(struct TileInfo* info) {
     const uint32_t pixels_char_horizontal = info->char_size * relative_font_width;
     const uint32_t atlas_center_offset = info->char_size / 2 - pixels_char_horizontal / 2;
 
-    if (info->current_x + pixels_char_horizontal >= info->max_pixels_horizontal) {
+    if (info->current_x + pixels_char_horizontal >= info->usable_pixels_horizontal) {
         info->current_y += info->char_size;
         info->current_x = 0;
     }
@@ -219,13 +220,6 @@ static void add_char(uint8_t c, struct TileInfo* info) {
     info->character = c;
 
     add_tile(info);
-
-    /*
-    fprintf(stderr, "Char '%c' (idx=%2d) atlas(%d,%d) -> output tile %d\n", 
-            c, index, 
-            info->offset_x, info->offset_y,
-            info->tile_index);
-    */
 }
 
 static void skip_unicode(char* out, size_t* size, const char* input) {
@@ -398,17 +392,20 @@ int main(void) {
     fprintf(stderr, "%s\n", asci_string);
     fprintf(stderr, "str len %zu\n", asci_string_len);
 
-    const int32_t offset_x = 58;
-    const int32_t offset_y = 58;
-    const int32_t char_size = 58;
-    const int32_t char_size_squared = char_size * char_size;
-    const int32_t img_size = char_size_squared * channels;
-    const int32_t tiles = asci_string_len - 1;
-    const int32_t pixels_horizontal = 50 * char_size;
+    const uint32_t offset_x = 58;
+    const uint32_t offset_y = 58;
+    const uint32_t char_size = 58;
+    const uint32_t char_size_squared = char_size * char_size;
+    const uint32_t img_size = char_size_squared * channels;
+    const uint32_t tiles = asci_string_len - 1;
 
-    int32_t rows = count_rows(asci_string, asci_string_len, char_size, pixels_horizontal);
-    int32_t grid_width = pixels_horizontal;
-    int32_t grid_height = char_size * rows + char_size * 2;
+    const uint32_t padding_x = char_size;
+    const uint32_t pixels_horizontal = 50 * char_size;
+    const uint32_t usable_pixels_horizontal = pixels_horizontal - 2 * padding_x;
+
+    uint32_t rows = count_rows(asci_string, asci_string_len, char_size, usable_pixels_horizontal);
+    uint32_t grid_width = pixels_horizontal;
+    uint32_t grid_height = char_size * rows + char_size * 2;
     size_t total_bytes = (size_t)grid_width * (size_t)grid_height * (size_t)channels;;
     uint8_t* crop_img = malloc(total_bytes);
     memset(crop_img, 255, grid_width * grid_height * channels);
@@ -424,11 +421,12 @@ int main(void) {
         .offset_y = offset_y,
         .char_size = char_size,
         .channels = channels,
+        .usable_pixels_horizontal = usable_pixels_horizontal,
         .max_pixels_horizontal = pixels_horizontal,
         .table_sym_horizontal = 26,
         .grid_width = grid_width,
         .grid_height = grid_height,
-        .padding_x = char_size,
+        .padding_x = padding_x,
         .rows_count = rows,
         .current_y = char_size,
     };
