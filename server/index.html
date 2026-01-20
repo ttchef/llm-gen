@@ -1,0 +1,41 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Premium C Server</title>
+    <link rel="stylesheet" href="style2.css">
+</head>
+<body>
+
+    <div class="container">
+        <header>
+            <h1>Yoooo what is in the up!!</h1>
+            <div class="status-badge">● Server Online</div>
+        </header>
+
+        <div class="drop-zone" id="drop-zone" onclick="document.getElementById('file-input').click()">
+            <div class="drop-zone__content">
+                <span class="drop-zone__icon">✦</span>
+                <span class="drop-zone__text">Drop image or <strong>browse</strong></span>
+            </div>
+            <input type="file" id="file-input" accept="image/*" hidden>
+        </div>
+
+        <div class="input-wrapper">
+            <div class="label-row">
+                <label for="server-msg">Transmission</label>
+                <span class="char-count">Encrypted</span>
+            </div>
+            <textarea id="server-msg" placeholder="Write your message..."></textarea>
+            <button class="submit-btn">
+                <span>Push to Server</span>
+                <svg class="icon" viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+            </button>
+        </div>
+    </div>
+
+</body>
+</html>
+
