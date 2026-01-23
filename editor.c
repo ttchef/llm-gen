@@ -10,6 +10,9 @@
 #define RAYGUI_IMPLEMENTATION
 #include "raygui.h"
 
+#define STB_IMAGE_IMPLEMENTATION
+#include "stb_image.h"
+
 // global because i dont care rn
 int32_t window_width = 1200;
 int32_t window_height = 800;
@@ -28,6 +31,13 @@ typedef struct Vector2I {
     int32_t x;
     int32_t y;
 } Vector2I;
+
+typedef struct RawImageData {
+    int32_t width;
+    int32_t height;
+    int32_t channels;
+    uint8_t* data;
+} RawImageData;
 
 static uint8_t tile_index_to_char(int32_t index) {
     static const uint8_t table[] = {
@@ -51,7 +61,39 @@ static uint8_t tile_index_to_char(int32_t index) {
     return table[index];
 }
 
-static void export(Vector2* bounding_box, size_t count) {
+static void detect_bounding_box(RawImageData* image_data, float char_size, Vector2I src_offset, Vector2* bounding_box) {
+    int32_t width = -1;
+    int32_t offset = INT32_MAX;
+
+    for (int32_t y = 0; y < char_size; y++) {
+        for (int32_t x = 0; x < char_size; x++) {
+            for (int32_t c = 0; c < image_data->channels; c++) {
+                int32_t index = ((src_offset.y + y) * image_data->width + (src_offset.x + x)) * image_data->channels + c;
+                uint8_t src_val = image_data->data[index];
+                if (src_val < 120 && x < offset) offset = x;
+                if (src_val < 120 && x > width) width = x;
+            }
+        }
+    }
+
+    printf("\tWidth = %d\n\tOffset = %d\n", width, offset);
+
+    bounding_box->x = width - offset;
+    bounding_box->y = offset - (char_size / 2.0f);
+    printf("%f %f\n", bounding_box->x, bounding_box->y);
+}
+
+static void auto_detect_images(RawImageData* image_data, float char_size, int32_t char_offset_x,
+                               int32_t char_offset_y, Vector2* bounding_boxes, size_t count) {
+    for (int32_t i = 0; i < count; i++) {
+        Vector2I focused_char = {0};
+        focused_char.x = (i % sym_per_line) * char_size + char_offset_x;
+        focused_char.y = (i / sym_per_line) * char_size + char_offset_y;
+        detect_bounding_box(image_data, char_size, focused_char, &bounding_boxes[i]);
+    }
+}
+
+static void export(Vector2* bounding_boxes, size_t count) {
     FILE* file = fopen("output.txt", "wb");
     if (!file) {
         fprintf(stderr, "failed to write file\n");
@@ -60,7 +102,7 @@ static void export(Vector2* bounding_box, size_t count) {
 
     for (int32_t i = 0; i < count; i++) {
         uint8_t ascii = tile_index_to_char(i);
-        fprintf(file, "%c %d %d\n", ascii, (int32_t)bounding_box[i].x, (int32_t)bounding_box[i].y);
+        fprintf(file, "%c %d %d\n", ascii, (int32_t)bounding_boxes[i].x, (int32_t)bounding_boxes[i].y);
     }
 
     fclose(file);
@@ -84,8 +126,18 @@ int32_t main(int32_t argc, char** argv) {
     Vector2 bounding_box[sym_total];
     memset(bounding_box, 0, sizeof(Vector2) * sym_total);
 
+    // Raylib texture loading
     Texture2D image = LoadTexture(argv[1]);
     float image_ratio = (float)image.width / (float)image.height;
+
+    // Load with stbi just to get the channels because it seems like 
+    // raylib cant do that without a pain >:) (why raylib hello are you alright???)
+    // rayliiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiib
+    RawImageData image_data = {0};
+    image_data.data = stbi_load(argv[1], &image_data.width, &image_data.height, &image_data.channels, 0);
+    if (!image_data.data) {
+        fprintf(stderr, "failed to load image: %s\n", argv[1]);
+    }
 
     while (!WindowShouldClose()) {
         window_width = GetScreenWidth();
@@ -149,7 +201,7 @@ int32_t main(int32_t argc, char** argv) {
         
         current_y += padding_y;
         bounds.y = current_y;
-        if (GuiButton(bounds, "Next Char")) {
+        if (GuiButton(bounds, "Next Char") && focus_char) {
             if (current_char + 1 < sym_total) current_char++;
             focused_char.x = current_char % sym_per_line;
             focused_char.y = current_char / sym_per_line;
@@ -157,7 +209,7 @@ int32_t main(int32_t argc, char** argv) {
 
         current_y += padding_y;
         bounds.y = current_y;
-        if (GuiButton(bounds, "Previous Char")) {
+        if (GuiButton(bounds, "Previous Char") && focus_char) {
             if (current_char - 1 >= 0) current_char--; 
             focused_char.x = current_char % sym_per_line;
             focused_char.y = current_char / sym_per_line;
@@ -170,6 +222,12 @@ int32_t main(int32_t argc, char** argv) {
         current_y += padding_y;
         bounds.y = current_y;
         GuiSlider(bounds, "Left", "Right", &bounding_box[current_char].y, -char_size, char_size);
+
+        current_y += padding_y;
+        bounds.y = current_y;
+        if (GuiButton(bounds, "Auto Detect")) {
+            auto_detect_images(&image_data, char_size, char_offset_x, char_offset_y, bounding_box, sym_total);
+        }
 
         current_y += padding_y;
         bounds.y = current_y;
@@ -186,6 +244,7 @@ int32_t main(int32_t argc, char** argv) {
         EndDrawing();
     }
 
+    stbi_image_free(image_data.data);
     CloseWindow();
 
     return 0;

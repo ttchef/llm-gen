@@ -14,7 +14,7 @@
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "stb_image_write.h"
 
-const bool generate_ai_answer = false;
+const bool generate_ai_answer = true;
 
 struct Glyph {
     uint32_t width;
@@ -390,10 +390,10 @@ static wsJson* get_ai_json() {
 
     struct Memory chunk = {0};
 
-    const char* json =
+    const char* json = 
         "{"
         "\"model\":\"deepseek-r1\","
-        "\"prompt\":\"explain simple what the sport calestehnics is!  make use of paragraphs DO NOT USE MARKDOWN AND ONLY ASCII AND WRITE IN GERMAN\","
+        "\"prompt\":\"Hier sind die wichtigsten Informationen für deine Aufgaben kompakt zusammengefasst:Zu Aufgabe 2: Wann ethischer Relativismus nach Law zulässig ist (M2)Ethischer Relativismus ist laut Stephen Law dann zulässig und begründet, wenn man erkennt, dass westliche Gesellschaften historisch dazu neigten, anderen ihre Moralvorstellungen aufzuzwingen. Er ist zulässig, weil es keine von moralsystemen unabhängigen Tatsachen gibt, die beweisen könnten, dass eine Handlung absolut richtig oder falsch ist. Law sieht ihn als berechtigt an, sobald man akzeptiert, dass der eigene moralische Standpunkt nur einer unter vielen ist und ständigen Wandlungen unterliegt. Zudem ist er Ausdruck von moralischer Bescheidenheit, da es als pure Überheblichkeit gilt, die eigene Sichtweise gegenüber anderen Kulturen als allgemeingültig zu behaupten.Zu Aufgabe 4: Bewertung von Feyerabends Position zu barbarischen Traditionen (M3)Für die Bewertung von Paul Feyerabends Position sind folgende Punkte zentral: Er bezeichnet den Relativismus als zivilisiert und klug, da er keine Kultur zum Nabel der Welt erhebt. Feyerabend argumentiert, dass Traditionen weder gut noch schlecht sind, sondern einfach existieren. Er provoziert mit der Ansicht, dass die Verurteilung von rituellen Tötungen oder Folter oft auf einer oberflächlichen und subjektiven Denkweise basiert. Seine Position besagt, dass man eine fremde Tradition nicht nach universellen Kriterien wie Glück oder Leiden bewerten darf, da diese Kriterien selbst nur Teil der eigenen (westlichen) Tradition sind. Wer versucht, humanitäre Standards als allgemeingültig vorzuschreiben, handelt laut Feyerabend wie ein gebildeter Sklavenhalter, der die Zerstörung fremder Werte billigend in Kauf nimmt. Aufgabe 2: Erklären Sie, wann nach Law ein ethischer Relativismus zulässig ist. (Bezieht sich auf Text M2)Aufgabe 4: Bewerten Sie Feyerabends Position im Hinblick auf barbarische Traditionen wie rituelle Tötungen, Folterungen, Verbrennungen usw. (Bezieht sich auf Text M3). Mache aufgabe 2 und 4 schrteibe in deutsch wie ein schüler. Benutze kein markdown und schreibe in paragraphen! Auch keine Emojies pures extended ascii\","
         "\"stream\":false"
         "}";
 
@@ -437,7 +437,7 @@ static wsJson* get_ai_json() {
     return root;
 }
 
-int32_t main(void) {
+int32_t main(int32_t argc, char** argv) {
     wsJson* root = NULL;
     char* response = NULL;
     if (generate_ai_answer) {
