@@ -15,6 +15,7 @@
 #include "stb_image_write.h"
 
 #include "array.h"
+#include "utils.h"
 
 const bool generate_ai_answer = false;
 
@@ -73,7 +74,9 @@ static inline int32_t get_char_offset(uint8_t c) {
     int32_t offset = font_widths[c].offset;
     return offset;
 
-}static int32_t count_rows(const char* text, size_t len, float char_size, int32_t pixels_horizontal) {
+}
+
+static int32_t count_rows(const char* text, size_t len, float char_size, int32_t pixels_horizontal) {
     int32_t current_x = 0;
     int32_t rows = 1;
 
@@ -99,56 +102,6 @@ static inline int32_t get_char_offset(uint8_t c) {
     return rows;
 }
 
-static int32_t char_to_tile_index(uint8_t c) {
-    if (c >= 'A' && c <= 'Z') return c - 'A';           // 0-25
-    if (c >= 'a' && c <= 'z') return 26 + (c - 'a');    // 26 - 51
-
-    switch (c) {
-        case ' ': return 52;
-        case '!': return 53;
-        case '?': return 54;
-        case '\'': return 55;
-        case ',': return 56;
-        case ':': return 57;
-        case '.': return 58;
-        case ';': return 59;
-        case '@': return 60;
-        case '*': return 61;
-        case '(': return 62;
-        case ')': return 63;
-        case '[': return 64;
-        case ']': return 65;
-        case '{': return 66;
-        case '}': return 67;
-        case '&': return 68;
-        case '=': return 69;
-        case '|': return 70;
-        case '-': return 71;
-        case '>': return 72;
-        case '<': return 73;
-        case '#': return 74;
-        case '"': return 75;
-        case '/': return 76;
-        case '\\': return 77;
-        case '%': return 78;
-        case '$': return 79;
-        case '^': return 80;
-        case '_': return 81;
-        case '+': return 82;
-        case 0xC4: return 83;
-        case 0xD6: return 84;
-        case 0xDC: return 85;
-        case 0xE4: return 86;
-        case 0xF6: return 87;
-        case 0xFC: return 88;
-        case 0xDF: return 89;
-    }
-    
-    if (c >= '0' && c <= '9') return 90 + c - '0';
-
-    return 52;
-}
-
 static void add_tile(struct TileInfo* info) {
     const uint32_t pixels_char_horizontal = get_char_width(info->character);
     const int32_t char_offset = get_char_offset(info->character);
@@ -164,17 +117,21 @@ static void add_tile(struct TileInfo* info) {
 
     for (int32_t y = 0; y < info->char_size; y++) {
         for (int32_t x = 0; x < pixels_char_horizontal; x++) {
-            for (int32_t c = 0; c < info->channels; c++) {
-                uint32_t dst_x = info->current_x + x;
-                uint32_t dst_y = info->current_y + y;
-                uint32_t dst_offset = (dst_y * info->max_pixels_horizontal + dst_x) * info->channels + c;
+            uint32_t dst_x = info->current_x + x;
+            uint32_t dst_y = info->current_y + y;
+            uint32_t dst_offset = (dst_y * info->max_pixels_horizontal + dst_x) * info->channels;
 
-                uint32_t src_x = info->offset_x + (info->char_size / 2) - pixels_char_horizontal / 2 + x;
-                uint32_t src_y = info->offset_y + y;
-                uint32_t src_offset = (src_y * info->input_width + src_x) * info->channels + c;
+            uint32_t src_x = info->offset_x + (info->char_size / 2) - pixels_char_horizontal / 2 + x;
+            uint32_t src_y = info->offset_y + y;
+            uint32_t src_offset = (src_y * info->input_width + src_x) * info->channels;
 
-                uint8_t src_val = info->input[src_offset];
-                if (src_val < 120) info->output[dst_offset] = src_val;
+            uint8_t* pixel = &info->input[src_offset];
+            uint8_t luminance = pixel_luminance(pixel, info->channels);
+
+            if (luminance < 120) {
+                for (int32_t c = 0; c < info->channels; c++) {
+                    info->output[dst_offset + c] = luminance;
+                }
             }
         }
     }

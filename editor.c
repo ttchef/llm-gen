@@ -44,33 +44,11 @@ typedef struct RawImageData {
     uint8_t* data;
 } RawImageData;
 
-static uint8_t tile_index_to_char(int32_t index) {
-    static const uint8_t table[] = {
-        'A','B','C','D','E','F','G','H','I','J','K','L','M',
-        'N','O','P','Q','R','S','T','U','V','W','X','Y','Z',
-
-        'a','b','c','d','e','f','g','h','i','j','k','l','m',
-        'n','o','p','q','r','s','t','u','v','w','x','y','z',
-
-        ' ', '!', '?', '\'', ',', ':', '.', ';', '@', '*',
-        '(', ')', '[', ']', '{', '}', '&', '=', '|', '-',
-        '>', '<', '#', '"', '/', '\\', '%', '$', '^', '_',
-        '+', 0xC4, 0xD6, 0xDC, 0xE4, 0xF6, 0xFC, 0xDF,
-
-        '0','1','2','3','4','5','6','7','8','9'
-    };
-
-    if (index < 0 || index >= (int32_t)(sizeof(table)))
-        return ' ';
-
-    return table[index];
-}
-
-static void detect_bounding_box(RawImageData* image_data, float char_size, Vector2I src_offset, Vector2* bounding_box) {
+static void detect_bounding_box(RawImageData* image_data, float char_size, Vector2I src_offset,
+                                Vector2* bounding_box, uint8_t threshold, int32_t auto_detection_padding) {
     int32_t min_x = INT32_MAX;
     int32_t max_x = -1;
 
-    const int32_t threshold = 120;
     const int32_t cell_px = (int32_t)(char_size + 0.5f);
 
     for (int32_t y = 0; y < cell_px; y++) {
@@ -96,15 +74,16 @@ static void detect_bounding_box(RawImageData* image_data, float char_size, Vecto
         float glyph_center_x = min_x + bounding_box->x * 0.5f;
         bounding_box->y = glyph_center_x - (cell_px * 0.5f);
     }
+    bounding_box->x += auto_detection_padding;
 }
 
 static void auto_detect_images(RawImageData* image_data, float char_size, int32_t char_offset_x,
-                               int32_t char_offset_y, Vector2* bounding_boxes, size_t count) {
+                               int32_t char_offset_y, Vector2* bounding_boxes, size_t count, uint8_t threshold, int32_t auto_detection_padding) {
     for (int32_t i = 0; i < count; i++) {
         Vector2I focused_char = {0};
         focused_char.x = (i % sym_per_line) * char_size + char_offset_x;
         focused_char.y = (i / sym_per_line) * char_size + char_offset_y;
-        detect_bounding_box(image_data, char_size, focused_char, &bounding_boxes[i]);
+        detect_bounding_box(image_data, char_size, focused_char, &bounding_boxes[i], threshold, auto_detection_padding);
     }
 }
 
@@ -138,6 +117,7 @@ int32_t main(int32_t argc, char** argv) {
 
     SetConfigFlags(FLAG_WINDOW_RESIZABLE);
     InitWindow(window_width, window_height, "Yoo");
+    GuiLoadStyle("style_jungle.rgs");
 
     int32_t current_char = 0;
     Vector2I focused_char = (Vector2I){0};
@@ -155,6 +135,9 @@ int32_t main(int32_t argc, char** argv) {
         fprintf(stderr, "failed to load image: %s\n", argv[1]);
     }
     printf("Channels: %d\n", image_data.channels);
+
+    uint8_t auto_detection_threshold = 120;
+    int32_t auto_detection_padding = 0;
 
     while (!WindowShouldClose()) {
         window_width = GetScreenWidth();
@@ -199,13 +182,13 @@ int32_t main(int32_t argc, char** argv) {
                           percent_size * dst.width, dst.height, (Color){225, 24, 12, 120});
         }
 
-        DrawRectangle(window_width * texture_width, 0, window_width * ui_width, window_height, GRAY);
+        DrawRectangle(window_width * texture_width, 0, window_width * ui_width, window_height, DARKGRAY);
 
         // UI
         int32_t ui_start_X = window_width * texture_width;
         int32_t ui_width_pixels = window_width * ui_width;
         int32_t padding_x = ui_width_pixels * 0.1f;
-        int32_t padding_y = window_height * 0.1f;
+        int32_t padding_y = window_height * 0.09f;
         int32_t ui_width_padding = ui_width_pixels - 2 * padding_x;
         int32_t current_y = padding_y;
         int32_t buttonHeight = window_height * 0.2f;
@@ -240,13 +223,28 @@ int32_t main(int32_t argc, char** argv) {
 
         current_y += padding_y;
         bounds.y = current_y;
-        GuiSlider(bounds, "Left", "Right", &bounding_box[current_char].y, -char_size, char_size);
+        GuiSlider(bounds, "Left", "Right", &bounding_box[current_char].y, -char_size / 4.0f, char_size / 4.0f);
 
         current_y += padding_y;
         bounds.y = current_y;
         if (GuiButton(bounds, "Auto Detect")) {
-            auto_detect_images(&image_data, char_size, char_offset_x, char_offset_y, bounding_box, sym_total);
+            auto_detect_images(&image_data, char_size, char_offset_x, char_offset_y, bounding_box, sym_total, auto_detection_threshold, auto_detection_padding);
         }
+
+        current_y += padding_y;
+        bounds.y = current_y;
+        float tmp_threshold = auto_detection_threshold;
+        GuiSlider(bounds, "Left", "Right", &tmp_threshold, 1, 255);
+        auto_detection_threshold = tmp_threshold;
+
+        bounds.width = ui_width_padding * 0.25f;
+        bounds.x = ui_start_X + ui_width_padding * 0.75f;
+        current_y += padding_y;
+        bounds.y = current_y;
+        static bool edit_mode = false;
+        if (GuiValueBox(bounds, "Auto Detection Extra Padding", &auto_detection_padding, 0, char_size, edit_mode)) edit_mode = !edit_mode;
+        bounds.width = ui_width_padding;
+        bounds.x = ui_start_X + padding_x;
 
         current_y += padding_y;
         bounds.y = current_y;
