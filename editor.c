@@ -88,12 +88,16 @@ static void detect_bounding_box(RawImageData* image_data, float char_size, Vecto
         }
     }
 
-    printf("\tWidth = %d\n\tOffset = %d\n", max_x, min_x);
-
-    bounding_box->x = (max_x - min_x) + 1;
-    float glyph_center_x = min_x + bounding_box->x * 0.5f;
-    bounding_box->y = glyph_center_x - (cell_px * 0.5f);
-    printf("%f %f\n", bounding_box->x, bounding_box->y);
+    // Set to defaults if nothing detected
+    if (min_x == INT32_MAX || max_x == -1) {
+        bounding_box->x = cell_px * 0.65f;
+        bounding_box->y = 0;
+    }
+    else {
+        bounding_box->x = (max_x - min_x) + 1;
+        float glyph_center_x = min_x + bounding_box->x * 0.5f;
+        bounding_box->y = glyph_center_x - (cell_px * 0.5f);
+    }
 }
 
 static void auto_detect_images(RawImageData* image_data, float char_size, int32_t char_offset_x,
@@ -107,16 +111,20 @@ static void auto_detect_images(RawImageData* image_data, float char_size, int32_
 }
 
 static void export(Vector2* bounding_boxes, size_t count) {
-    FILE* file = fopen("output.txt", "wb");
+    FILE* file = fopen("array.h", "wb");
     if (!file) {
         fprintf(stderr, "failed to write file\n");
         exit(1);
     }
 
+    fprintf(file, "\nstruct Glyph {\n\tuint32_t width;\n\tint32_t offset;\n};\n\n");
+    fprintf(file, "const struct Glyph font_widths[256] = {\n");
+
     for (int32_t i = 0; i < count; i++) {
         uint8_t ascii = tile_index_to_char(i);
-        fprintf(file, "%c %d %d\n", ascii, (int32_t)bounding_boxes[i].x, (int32_t)bounding_boxes[i].y);
+        fprintf(file, "\t['%u'] = { %d, %d },\n", ascii, (int32_t)bounding_boxes[i].x, (int32_t)bounding_boxes[i].y);
     }
+    fprintf(file, "};\n\n");
 
     fclose(file);
 }
