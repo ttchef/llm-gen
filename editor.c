@@ -67,12 +67,17 @@ static void detect_bounding_box(RawImageData* image_data, float char_size, Vecto
 
     for (int32_t y = 0; y < char_size; y++) {
         for (int32_t x = 0; x < char_size; x++) {
-            for (int32_t c = 0; c < image_data->channels; c++) {
-                int32_t index = ((src_offset.y + y) * image_data->width + (src_offset.x + x)) * image_data->channels + c;
-                uint8_t src_val = image_data->data[index];
-                if (src_val < 120 && x < offset) offset = x;
-                if (src_val < 120 && x > width) width = x;
-            }
+            int32_t index = ((src_offset.y + y) * image_data->width + (src_offset.x + x)) * image_data->channels;
+
+            uint8_t r = image_data->data[index];
+            uint8_t g = image_data->data[index + 1];
+            uint8_t b = image_data->data[index + 2];
+
+            // https://stackoverflow.com/questions/596216/formula-to-determine-perceived-brightness-of-rgb-color
+            uint8_t luminance = (uint8_t)(0.2126*r + 0.7152*g + 0.0722*b);
+
+            if (luminance < 120 && x < offset) offset = x;
+            if (luminance < 120 && x > width) width = x;
         }
     }
 
@@ -138,6 +143,7 @@ int32_t main(int32_t argc, char** argv) {
     if (!image_data.data) {
         fprintf(stderr, "failed to load image: %s\n", argv[1]);
     }
+    printf("Channels: %d\n", image_data.channels);
 
     while (!WindowShouldClose()) {
         window_width = GetScreenWidth();
@@ -176,8 +182,9 @@ int32_t main(int32_t argc, char** argv) {
 
         if (focus_char) {
             Vector2 dim = bounding_box[current_char];
-            DrawRectangle((dst.width / 2) - ((dim.x / char_size) * dst.width) / 2 + dim.y, 0,
-                          (dim.x / char_size) * dst.width, dst.height, (Color){225, 24, 12, 120});
+            float percent_size = dim.x / char_size;
+            DrawRectangle((dst.width / 2) - (percent_size * dst.width) / 2 + dim.y, 0,
+                          percent_size * dst.width, dst.height, (Color){225, 24, 12, 120});
         }
 
         DrawRectangle(window_width * texture_width, 0, window_width * ui_width, window_height, GRAY);
