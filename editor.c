@@ -27,6 +27,9 @@ const uint32_t sym_per_line = 26;
 
 const uint32_t sym_total = 100;
 
+#define MIN(a, b) (((a) < (b)) ? (a) : (b))
+#define MAX(a, b) (((a) > (b)) ? (a) : (b))
+
 typedef struct Vector2I {
     int32_t x;
     int32_t y;
@@ -62,8 +65,10 @@ static uint8_t tile_index_to_char(int32_t index) {
 }
 
 static void detect_bounding_box(RawImageData* image_data, float char_size, Vector2I src_offset, Vector2* bounding_box) {
-    int32_t width = -1;
-    int32_t offset = INT32_MAX;
+    int32_t min_x = INT32_MAX;
+    int32_t max_x = -1;
+
+    const int32_t threshold = 120;
 
     for (int32_t y = 0; y < char_size; y++) {
         for (int32_t x = 0; x < char_size; x++) {
@@ -75,16 +80,18 @@ static void detect_bounding_box(RawImageData* image_data, float char_size, Vecto
 
             // https://stackoverflow.com/questions/596216/formula-to-determine-perceived-brightness-of-rgb-color
             uint8_t luminance = (uint8_t)(0.2126*r + 0.7152*g + 0.0722*b);
-
-            if (luminance < 120 && x < offset) offset = x;
-            if (luminance < 120 && x > width) width = x;
+            if (luminance < threshold) {
+                min_x = MIN(min_x, x);
+                max_x = MAX(max_x, x);
+            }
         }
     }
 
-    printf("\tWidth = %d\n\tOffset = %d\n", width, offset);
+    printf("\tWidth = %d\n\tOffset = %d\n", max_x, min_x);
 
-    bounding_box->x = width - offset;
-    bounding_box->y = offset - (char_size / 2.0f);
+    bounding_box->x = (max_x - min_x) + 1;
+    int32_t glyph_center_x = min_x + bounding_box->x * 0.5f;
+    bounding_box->y = glyph_center_x - (char_size * 0.5f);
     printf("%f %f\n", bounding_box->x, bounding_box->y);
 }
 
@@ -135,9 +142,6 @@ int32_t main(int32_t argc, char** argv) {
     Texture2D image = LoadTexture(argv[1]);
     float image_ratio = (float)image.width / (float)image.height;
 
-    // Load with stbi just to get the channels because it seems like 
-    // raylib cant do that without a pain >:) (why raylib hello are you alright???)
-    // rayliiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiib
     RawImageData image_data = {0};
     image_data.data = stbi_load(argv[1], &image_data.width, &image_data.height, &image_data.channels, 0);
     if (!image_data.data) {
