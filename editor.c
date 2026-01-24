@@ -69,9 +69,10 @@ static void detect_bounding_box(RawImageData* image_data, float char_size, Vecto
     int32_t max_x = -1;
 
     const int32_t threshold = 120;
+    const int32_t cell_px = (int32_t)(char_size + 0.5f);
 
-    for (int32_t y = 0; y < char_size; y++) {
-        for (int32_t x = 0; x < char_size; x++) {
+    for (int32_t y = 0; y < cell_px; y++) {
+        for (int32_t x = 0; x < cell_px; x++) {
             int32_t index = ((src_offset.y + y) * image_data->width + (src_offset.x + x)) * image_data->channels;
 
             uint8_t r = image_data->data[index];
@@ -90,8 +91,8 @@ static void detect_bounding_box(RawImageData* image_data, float char_size, Vecto
     printf("\tWidth = %d\n\tOffset = %d\n", max_x, min_x);
 
     bounding_box->x = (max_x - min_x) + 1;
-    int32_t glyph_center_x = min_x + bounding_box->x * 0.5f;
-    bounding_box->y = glyph_center_x - (char_size * 0.5f);
+    float glyph_center_x = min_x + bounding_box->x * 0.5f;
+    bounding_box->y = glyph_center_x - (cell_px * 0.5f);
     printf("%f %f\n", bounding_box->x, bounding_box->y);
 }
 
@@ -187,7 +188,8 @@ int32_t main(int32_t argc, char** argv) {
         if (focus_char) {
             Vector2 dim = bounding_box[current_char];
             float percent_size = dim.x / char_size;
-            DrawRectangle((dst.width / 2) - (percent_size * dst.width) / 2 + dim.y, 0,
+            float percent_offset = dim.y / char_size;
+            DrawRectangle((dst.width / 2) - (percent_size * dst.width) / 2 + percent_offset * dst.width, 0,
                           percent_size * dst.width, dst.height, (Color){225, 24, 12, 120});
         }
 
