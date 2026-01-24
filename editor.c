@@ -106,6 +106,62 @@ static void export(Vector2* bounding_boxes, size_t count) {
     fclose(file);
 }
 
+static void import(const char* filepath, Vector2* bounding_boxes, size_t count) {
+    FILE* file = fopen(filepath, "rb");
+    if (!file) {
+        fprintf(stderr, "failed to open file: %s\n", filepath);
+        return;
+    }
+
+    const int32_t max_line_length = 128;
+    char line[max_line_length];
+    bool in_array = false;
+
+    const char* matching_string = "const struct Glyph font_widths";
+    size_t matching_len = strlen(matching_string);
+
+    int32_t bound_index = 0;
+    
+    while (fgets(line, max_line_length, file)) {
+        if (!in_array && strncmp(matching_string, line, matching_len) == 0) {
+            in_array = true;
+            continue;
+        }
+
+        if (in_array) {
+            // get pos of {
+            char* current_char = strchr(line, '{');
+            if (!current_char) {
+                fprintf(stderr, "failed parsing: %s\n", filepath);
+                fclose(file);
+                return;
+            }
+
+            // go to number
+            current_char += 2;
+
+            int32_t width = strtoul(current_char, &current_char, 10);
+            if (*current_char != ',') {
+                fprintf(stderr, "failed to parse file: %s\n", filepath);
+                fclose(file);
+                return;
+            }
+            current_char += 2;
+
+            int32_t offset = strtoul(current_char, &current_char, 10);
+            bounding_boxes[bound_index++] = (Vector2){width, offset};
+            if (bound_index == count) {
+                fclose(file);
+                fprintf(stderr, "successfuly importet file\n");
+                return;
+            }
+            
+        }
+    }
+
+    fclose(file);
+}
+
 // char because of lsp
 int32_t main(int32_t argc, char** argv) {
     if (argc < 2) {
@@ -255,7 +311,7 @@ int32_t main(int32_t argc, char** argv) {
         current_y += padding_y;
         bounds.y = current_y;
         if (GuiButton(bounds, "Import")) {
-
+            import("array.h", bounding_box, sym_total);
         }
 
         EndDrawing();
