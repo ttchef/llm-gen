@@ -122,7 +122,7 @@ static void export(Vector2* bounding_boxes, size_t count) {
 
     for (int32_t i = 0; i < count; i++) {
         uint8_t ascii = tile_index_to_char(i);
-        fprintf(file, "\t['%u'] = { %d, %d },\n", ascii, (int32_t)bounding_boxes[i].x, (int32_t)bounding_boxes[i].y);
+        fprintf(file, "\t[%u] = { %d, %d },\n", ascii, (int32_t)bounding_boxes[i].x, (int32_t)bounding_boxes[i].y);
     }
     fprintf(file, "};\n\n");
 
