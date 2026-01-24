@@ -13,6 +13,8 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 
+#include "utils.h"
+
 // global because i dont care rn
 int32_t window_width = 1200;
 int32_t window_height = 800;
@@ -74,13 +76,9 @@ static void detect_bounding_box(RawImageData* image_data, float char_size, Vecto
     for (int32_t y = 0; y < cell_px; y++) {
         for (int32_t x = 0; x < cell_px; x++) {
             int32_t index = ((src_offset.y + y) * image_data->width + (src_offset.x + x)) * image_data->channels;
+            uint8_t* pixel = &image_data->data[index];
 
-            uint8_t r = image_data->data[index];
-            uint8_t g = image_data->data[index + 1];
-            uint8_t b = image_data->data[index + 2];
-
-            // https://stackoverflow.com/questions/596216/formula-to-determine-perceived-brightness-of-rgb-color
-            uint8_t luminance = (uint8_t)(0.2126*r + 0.7152*g + 0.0722*b);
+            uint8_t luminance = pixel_luminance(pixel, image_data->channels);
             if (luminance < threshold) {
                 min_x = MIN(min_x, x);
                 max_x = MAX(max_x, x);
