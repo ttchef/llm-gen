@@ -61,12 +61,12 @@ int main() {
         char method[10], path[256];
         sscanf(buffer, "%s %s", method, path);
         
-        // LOGGING: This is the most important part right now
         printf("--- New Request: %s %s ---\n", method, path);
 
         char* filename = NULL;
         char* content_type = NULL;
-
+        
+        if (strcmp(method, "GET") == 0)
         if (strstr(path, "style2.css") != NULL) {
             filename = "style2.css";
             content_type = "text/css";

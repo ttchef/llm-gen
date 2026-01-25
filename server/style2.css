@@ -1,5 +1,5 @@
 :root {
-    --primary: #10b981; /* Emerald */
+    --primary: #10b981;
     --primary-glow: rgba(16, 185, 129, 0.3);
     --bg-dark: #020617;
     --card-bg: rgba(15, 23, 42, 0.7);
@@ -11,16 +11,15 @@
 body {
     background-color: var(--bg-dark);
     background-image: 
-        radial-gradient(at 0% 0%, rgba(16, 185, 129, 0.1) 0px, transparent 50%),
-        radial-gradient(at 100% 100%, rgba(30, 64, 175, 0.1) 0px, transparent 50%);
+        radial-gradient(at 0% 0%, rgba(16, 185, 129, 0.1), transparent 50%),
+        radial-gradient(at 100% 100%, rgba(30, 64, 175, 0.1), transparent 50%);
     color: var(--text-main);
-    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    font-family: 'Inter', system-ui, sans-serif;
     display: flex;
     justify-content: center;
     align-items: center;
     min-height: 100vh;
     margin: 0;
-    overflow: hidden;
 }
 
 .container {
@@ -28,7 +27,6 @@ body {
     max-width: 420px;
     background: var(--card-bg);
     backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
     border: 1px solid var(--border);
     border-radius: 32px;
     padding: 40px;
@@ -44,7 +42,6 @@ h1 {
     margin: 0;
     font-size: 1.75rem;
     font-weight: 800;
-    letter-spacing: -0.025em;
     background: linear-gradient(to bottom right, #fff, #94a3b8);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
@@ -59,7 +56,7 @@ h1 {
     font-weight: 700;
 }
 
-/* Drag & Drop Zone */
+/* Drop zone */
 .drop-zone {
     position: relative;
     height: 160px;
@@ -69,8 +66,8 @@ h1 {
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-    background: rgba(0, 0, 0, 0.2);
+    transition: all 0.3s ease;
+    background: rgba(0, 0, 0, 0.25);
     margin-bottom: 30px;
     overflow: hidden;
 }
@@ -81,15 +78,15 @@ h1 {
     transform: translateY(-2px);
 }
 
+.drop-zone__content {
+    text-align: center;
+    pointer-events: none;
+}
+
 .drop-zone__icon {
     font-size: 2.5rem;
     display: block;
     margin-bottom: 10px;
-    filter: drop-shadow(0 0 10px var(--primary-glow));
-}
-
-.drop-zone__content {
-    text-align: center;
 }
 
 .drop-zone__text {
@@ -97,11 +94,34 @@ h1 {
     font-size: 0.85rem;
 }
 
-.drop-zone__text strong {
-    color: var(--text-main);
+.drop-zone.has-files .drop-zone__content {
+    display: none;
 }
 
-/* Text Area and Input Wrapper */
+/* Previews */
+.drop-zone__previews {
+    position: absolute;
+    inset: 12px;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(70px, 1fr));
+    gap: 10px;
+    pointer-events: none;
+}
+
+.preview {
+    border-radius: 14px;
+    overflow: hidden;
+    border: 1px solid var(--border);
+    background: #000;
+}
+
+.preview img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+/* Input area */
 .input-wrapper {
     display: flex;
     flex-direction: column;
@@ -111,7 +131,6 @@ h1 {
 .label-row {
     display: flex;
     justify-content: space-between;
-    padding: 0 4px;
 }
 
 label, .char-count {
@@ -123,27 +142,22 @@ label, .char-count {
 }
 
 textarea {
-    width: 100%;
-    box-sizing: border-box;
     background: rgba(0, 0, 0, 0.4);
     border: 1px solid var(--border);
     border-radius: 20px;
     color: #fff;
     padding: 20px;
     font-size: 0.95rem;
-    font-family: inherit;
     resize: none;
     min-height: 130px;
-    transition: all 0.3s ease;
     outline: none;
 }
 
 textarea:focus {
     border-color: var(--primary);
-    background: rgba(0, 0, 0, 0.5);
 }
 
-/* Modern Button */
+/* Button */
 .submit-btn {
     background: var(--primary);
     color: #020617;
@@ -154,11 +168,20 @@ textarea:focus {
     font-weight: 700;
     cursor: pointer;
     display: flex;
-    align-items: center;
     justify-content: center;
+    align-items: center;
     gap: 10px;
     transition: all 0.3s ease;
     margin-top: 10px;
+}
+
+.submit-btn:hover {
+    transform: scale(1.02);
+    box-shadow: 0 10px 20px -5px var(--primary-glow);
+}
+
+.submit-btn:active {
+    transform: scale(0.98);
 }
 
 .submit-btn .icon {
@@ -167,12 +190,3 @@ textarea:focus {
     fill: currentColor;
 }
 
-.submit-btn:hover {
-    filter: brightness(1.1);
-    transform: scale(1.02);
-    box-shadow: 0 10px 20px -5px var(--primary-glow);
-}
-
-.submit-btn:active {
-    transform: scale(0.98);
-}
