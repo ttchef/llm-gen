@@ -10,7 +10,7 @@
 #define RAYGUI_IMPLEMENTATION
 #include "raygui.h"
 
-//#define STB_IMAGE_IMPLEMENTATION
+#define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 
 #include "utils.h"
@@ -184,6 +184,116 @@ static void import(const char* filepath, GlyphData* bounding_boxes, size_t count
     fclose(file);
 }
 
+void draw_ui_tab(int32_t* tab, bool* focus_char, Vector2I* focused_char, int32_t current_char,
+                 GlyphData* glyphs, RawImageData* image_data, uint8_t auto_detection_threshold,
+                 int32_t auto_detection_padding, int32_t tabs_count, const char** tabs_name) {
+    int32_t ui_start_X = window_width * texture_width;
+    int32_t ui_width_pixels = window_width * ui_width;
+    int32_t padding_x = ui_width_pixels * 0.1f;
+    int32_t padding_y = window_height * 0.1f;
+    int32_t ui_width_padding = ui_width_pixels - 2 * padding_x;
+    int32_t current_y = padding_y;
+    int32_t buttonHeight = window_height * 0.2f;
+
+    Rectangle bounds = {
+        .x = ui_start_X + padding_x,
+        .y = current_y,
+        .width = ui_width_padding,
+        .height = 50,
+    };
+
+    // general
+    if (GuiButton(bounds, "Focus Character")) *focus_char = !*focus_char;
+
+    current_y += padding_y;
+    bounds.y = current_y;
+    if (GuiButton(bounds, "Next Char") && *focus_char) {
+        if (current_char + 1 < sym_total) current_char++;
+        focused_char->x = current_char % sym_per_line;
+        focused_char->y = current_char / sym_per_line;
+    }
+
+    current_y += padding_y;
+    bounds.y = current_y;
+    if (GuiButton(bounds, "Previous Char") && *focus_char) {
+        if (current_char - 1 >= 0) current_char--; 
+        focused_char->x = current_char % sym_per_line;
+        focused_char->y = current_char / sym_per_line;
+    }
+
+    // Tab Menu
+    bounds.width /= tabs_count;
+    for (int32_t i = 0; i < tabs_count; i++) {
+        if (GuiButton(bounds, tabs_name[i])) {
+            *tab = i;
+        }
+        bounds.x += bounds.width;
+    }
+    bounds.x = ui_start_X + padding_x;
+    bounds.width = ui_width_padding;
+
+    // check bounds for tab
+    if (*tab < 0 || *tab > 3) *tab = 0;
+    switch (*tab) {
+        case 0: {
+            current_y += padding_y;
+            bounds.y = current_y;
+            GuiSlider(bounds, "Left", "Right", &glyphs[current_char].width, 1.0f, char_size);
+
+            current_y += padding_y;
+            bounds.y = current_y;
+            GuiSlider(bounds, "Left", "Right", &glyphs[current_char].offset_x, -char_size / 4.0f, char_size / 4.0f);
+
+            current_y += padding_y;
+            bounds.y = current_y;
+            GuiSlider(bounds, "Left", "Right", &glyphs[current_char].offset_y, -char_size / 4.0f, char_size / 4.0f);
+
+            break;
+        }
+        case 1: {
+            current_y += padding_y;
+            bounds.y = current_y;
+            if (GuiButton(bounds, "Auto Detect")) {
+                auto_detect_images(image_data, char_size, char_offset_x, char_offset_y, glyphs, sym_total, auto_detection_threshold, auto_detection_padding);
+            }
+
+            current_y += padding_y;
+            bounds.y = current_y;
+            float tmp_threshold = auto_detection_threshold;
+            GuiSlider(bounds, "Left", "Right", &tmp_threshold, 1, 255);
+            auto_detection_threshold = tmp_threshold;
+
+            bounds.width = ui_width_padding * 0.25f;
+            bounds.x = ui_start_X + ui_width_padding * 0.75f;
+            current_y += padding_y;
+            bounds.y = current_y;
+            static bool edit_mode = false;
+            if (GuiValueBox(bounds, "Auto Detection Extra Padding", &auto_detection_padding, 0, char_size, edit_mode)) edit_mode = !edit_mode;
+
+            break;
+        }
+        case 2: {
+            break;
+        }
+    }
+
+    bounds.width = ui_width_padding;
+    bounds.x = ui_start_X + padding_x;
+
+    current_y += padding_y;
+    bounds.y = current_y;
+    if (GuiButton(bounds, "Export")) {
+        export(glyphs, sym_total);
+    }
+
+    current_y += padding_y;
+    bounds.y = current_y;
+    if (GuiButton(bounds, "Import")) {
+        import("array.h", glyphs, sym_total);
+    }
+
+}
+
 // char because of lsp
 int32_t main(int32_t argc, char** argv) {
     if (argc < 2) {
@@ -216,6 +326,14 @@ int32_t main(int32_t argc, char** argv) {
 
     uint8_t auto_detection_threshold = 120;
     int32_t auto_detection_padding = 0;
+    int32_t current_tab = 0;
+
+    const int32_t tabs_count = 3;
+    const char* tabs_name[tabs_count] ;
+    tabs_name[0] = "Manual";
+    tabs_name[1] = "Auto";
+    tabs_name[2] = "Offset Y";
+
 
     while (!WindowShouldClose()) {
         window_width = GetScreenWidth();
@@ -257,8 +375,9 @@ int32_t main(int32_t argc, char** argv) {
             float percent_size = glyph.width / char_size;
             float percent_offset_x = glyph.offset_x / char_size;
             float percent_offset_y = glyph.offset_y / char_size;
-            DrawRectangle((dst.width / 2) - (percent_size * dst.width) / 2 + percent_offset_x * dst.width, 0,
-                          percent_size * dst.width, dst.height, (Color){225, 24, 12, 120});
+            int32_t pos_x = (dst.width / 2) - (percent_size * dst.width) / 2 + percent_offset_x * dst.width;
+            int32_t pos_y = percent_offset_y * dst.width;
+            DrawRectangle(pos_x, pos_y, percent_size * dst.width, dst.height, (Color){225, 24, 12, 120});
         }
 
         DrawRectangle(window_width * texture_width, 0, window_width * ui_width, window_height, DARKGRAY);
@@ -267,7 +386,7 @@ int32_t main(int32_t argc, char** argv) {
         int32_t ui_start_X = window_width * texture_width;
         int32_t ui_width_pixels = window_width * ui_width;
         int32_t padding_x = ui_width_pixels * 0.1f;
-        int32_t padding_y = window_height * 0.09f;
+        int32_t padding_y = window_height * 0.08f;
         int32_t ui_width_padding = ui_width_pixels - 2 * padding_x;
         int32_t current_y = padding_y;
         int32_t buttonHeight = window_height * 0.2f;
@@ -278,68 +397,9 @@ int32_t main(int32_t argc, char** argv) {
             .width = ui_width_padding,
             .height = 50,
         };
-        if (GuiButton(bounds, "Focus Character")) focus_char = !focus_char;
-        
-        current_y += padding_y;
-        bounds.y = current_y;
-        if (GuiButton(bounds, "Next Char") && focus_char) {
-            if (current_char + 1 < sym_total) current_char++;
-            focused_char.x = current_char % sym_per_line;
-            focused_char.y = current_char / sym_per_line;
-        }
-
-        current_y += padding_y;
-        bounds.y = current_y;
-        if (GuiButton(bounds, "Previous Char") && focus_char) {
-            if (current_char - 1 >= 0) current_char--; 
-            focused_char.x = current_char % sym_per_line;
-            focused_char.y = current_char / sym_per_line;
-        }
-
-        current_y += padding_y;
-        bounds.y = current_y;
-        GuiSlider(bounds, "Left", "Right", &glyphs[current_char].width, 1.0f, char_size);
-
-        current_y += padding_y;
-        bounds.y = current_y;
-        GuiSlider(bounds, "Left", "Right", &glyphs[current_char].offset_x, -char_size / 4.0f, char_size / 4.0f);
-
-        current_y += padding_y;
-        bounds.y = current_y;
-        GuiSlider(bounds, "Left", "Right", &glyphs[current_char].offset_y, -char_size / 4.0f, char_size / 4.0f);
-
-        current_y += padding_y;
-        bounds.y = current_y;
-        if (GuiButton(bounds, "Auto Detect")) {
-            auto_detect_images(&image_data, char_size, char_offset_x, char_offset_y, glyphs, sym_total, auto_detection_threshold, auto_detection_padding);
-        }
-
-        current_y += padding_y;
-        bounds.y = current_y;
-        float tmp_threshold = auto_detection_threshold;
-        GuiSlider(bounds, "Left", "Right", &tmp_threshold, 1, 255);
-        auto_detection_threshold = tmp_threshold;
-
-        bounds.width = ui_width_padding * 0.25f;
-        bounds.x = ui_start_X + ui_width_padding * 0.75f;
-        current_y += padding_y;
-        bounds.y = current_y;
-        static bool edit_mode = false;
-        if (GuiValueBox(bounds, "Auto Detection Extra Padding", &auto_detection_padding, 0, char_size, edit_mode)) edit_mode = !edit_mode;
-        bounds.width = ui_width_padding;
-        bounds.x = ui_start_X + padding_x;
-
-        current_y += padding_y;
-        bounds.y = current_y;
-        if (GuiButton(bounds, "Export")) {
-            export(glyphs, sym_total);
-        }
-
-        current_y += padding_y;
-        bounds.y = current_y;
-        if (GuiButton(bounds, "Import")) {
-            import("array.h", glyphs, sym_total);
-        }
+              
+        draw_ui_tab(&current_tab, &focus_char, &focused_char, current_char, glyphs, &image_data,
+                    auto_detection_threshold, auto_detection_padding, tabs_count, tabs_name);
 
         EndDrawing();
     }
