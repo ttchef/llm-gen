@@ -371,7 +371,7 @@ int32_t main(int32_t argc, char** argv) {
  
         // check end to dash
         const uint32_t pixels_char_horizontal = get_char_width(asci_string[i]);
-        if (info.current_x + pixels_char_horizontal * 4 >= info.usable_pixels_horizontal && info.in_word) {
+        if (info.current_x + pixels_char_horizontal * 2.5f >= info.usable_pixels_horizontal && info.in_word) {
             add_char('-', &info);
             info.current_x = 0;
             info.current_y += info.char_size;
