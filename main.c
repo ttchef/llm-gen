@@ -130,7 +130,7 @@ static void add_tile(struct TileInfo* info) {
 
             if (luminance < 120) {
                 for (int32_t c = 0; c < info->channels; c++) {
-                    info->output[dst_offset + c] = luminance;
+                        info->output[dst_offset + c] = luminance;
                 }
             }
         }
@@ -366,7 +366,7 @@ int32_t main(int32_t argc, char** argv) {
             continue;
         }
 
-        if (asci_string[i] && asci_string[i] != ' ') info.in_word = true;
+        if (asci_string[i + 1] && asci_string[i + 1] != ' ') info.in_word = true;
         else info.in_word = false;
  
         // check end to dash
@@ -375,6 +375,7 @@ int32_t main(int32_t argc, char** argv) {
             add_char('-', &info);
             info.current_x = 0;
             info.current_y += info.char_size;
+            continue;
         }
 
         add_char(asci_string[i], &info);
