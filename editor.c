@@ -44,8 +44,14 @@ typedef struct RawImageData {
     uint8_t* data;
 } RawImageData;
 
-static void detect_bounding_box(RawImageData* image_data, float char_size, Vector2I src_offset,
-                                Vector2* bounding_box, uint8_t threshold, int32_t auto_detection_padding) {
+typedef struct GylphData {
+    float width;
+    float offset_x;
+    float offset_y;
+} GlyphData;
+
+static void detect_gylph_data(RawImageData* image_data, float char_size, Vector2I src_offset,
+                                GlyphData* glyph, uint8_t threshold, int32_t auto_detection_padding) {
     int32_t min_x = INT32_MAX;
     int32_t max_x = -1;
 
@@ -66,28 +72,29 @@ static void detect_bounding_box(RawImageData* image_data, float char_size, Vecto
 
     // Set to defaults if nothing detected
     if (min_x == INT32_MAX || max_x == -1) {
-        bounding_box->x = cell_px * 0.65f;
-        bounding_box->y = 0;
+        glyph->width = cell_px * 0.65f;
+        glyph->offset_x = 0;
+        glyph->offset_y = 0;
     }
     else {
-        bounding_box->x = (max_x - min_x) + 1;
-        float glyph_center_x = min_x + bounding_box->x * 0.5f;
-        bounding_box->y = glyph_center_x - (cell_px * 0.5f);
+        glyph->width = (max_x - min_x) + 1;
+        float glyph_center_x = min_x + glyph->width * 0.5f;
+        glyph->offset_x = glyph_center_x - (cell_px * 0.5f);
     }
-    bounding_box->x += auto_detection_padding;
+    glyph->offset_x += auto_detection_padding;
 }
 
 static void auto_detect_images(RawImageData* image_data, float char_size, int32_t char_offset_x,
-                               int32_t char_offset_y, Vector2* bounding_boxes, size_t count, uint8_t threshold, int32_t auto_detection_padding) {
+                               int32_t char_offset_y, GlyphData* glyphs, size_t count, uint8_t threshold, int32_t auto_detection_padding) {
     for (int32_t i = 0; i < count; i++) {
         Vector2I focused_char = {0};
         focused_char.x = (i % sym_per_line) * char_size + char_offset_x;
         focused_char.y = (i / sym_per_line) * char_size + char_offset_y;
-        detect_bounding_box(image_data, char_size, focused_char, &bounding_boxes[i], threshold, auto_detection_padding);
+        detect_gylph_data(image_data, char_size, focused_char, &glyphs[i], threshold, auto_detection_padding);
     }
 }
 
-static void export(Vector2* bounding_boxes, size_t count) {
+static void export(GlyphData* bounding_boxes, size_t count) {
     FILE* file = fopen("array.h", "wb");
     if (!file) {
         fprintf(stderr, "failed to write file\n");
@@ -99,14 +106,16 @@ static void export(Vector2* bounding_boxes, size_t count) {
 
     for (int32_t i = 0; i < count; i++) {
         uint8_t ascii = tile_index_to_char(i);
-        fprintf(file, "\t[%u] = { %d, %d },\n", ascii, (int32_t)bounding_boxes[i].x, (int32_t)bounding_boxes[i].y);
+        fprintf(file, "\t[%u] = { %d, %d, %d },\n", ascii, (int32_t)bounding_boxes[i].width,
+                                                         (int32_t)bounding_boxes[i].offset_x,
+                                                         (int32_t)bounding_boxes[i].offset_y);
     }
     fprintf(file, "};\n\n");
 
     fclose(file);
 }
 
-static void import(const char* filepath, Vector2* bounding_boxes, size_t count) {
+static void import(const char* filepath, GlyphData* bounding_boxes, size_t count) {
     FILE* file = fopen(filepath, "rb");
     if (!file) {
         fprintf(stderr, "failed to open file: %s\n", filepath);
@@ -121,8 +130,10 @@ static void import(const char* filepath, Vector2* bounding_boxes, size_t count) 
     size_t matching_len = strlen(matching_string);
 
     int32_t bound_index = 0;
-    
+    int32_t line_index = 0;
+
     while (fgets(line, max_line_length, file)) {
+        line_index++;
         if (!in_array && strncmp(matching_string, line, matching_len) == 0) {
             in_array = true;
             continue;
@@ -132,7 +143,7 @@ static void import(const char* filepath, Vector2* bounding_boxes, size_t count) 
             // get pos of {
             char* current_char = strchr(line, '{');
             if (!current_char) {
-                fprintf(stderr, "failed parsing: %s\n", filepath);
+                fprintf(stderr, "failed parsing: %s at line: %d\nExpected: '{' found '%c'\n", filepath, line_index, *current_char);
                 fclose(file);
                 return;
             }
@@ -142,14 +153,25 @@ static void import(const char* filepath, Vector2* bounding_boxes, size_t count) 
 
             int32_t width = strtoul(current_char, &current_char, 10);
             if (*current_char != ',') {
-                fprintf(stderr, "failed to parse file: %s\n", filepath);
+                fprintf(stderr, "failed parsing: %s at line: %d when getting the glyph widht\nExpected: ',' found '%c'\n",
+                        filepath, line_index, *current_char);
                 fclose(file);
                 return;
             }
             current_char += 2;
 
-            int32_t offset = strtoul(current_char, &current_char, 10);
-            bounding_boxes[bound_index++] = (Vector2){width, offset};
+            int32_t offset_x = strtoul(current_char, &current_char, 10);
+            if (*current_char != ',') {
+                fprintf(stderr, "failed parsing: %s at line: %d when getting the glyph offset_x\nExpected: ',' found '%c'\n",
+                        filepath, line_index, *current_char);                
+                fclose(file);
+                return;
+            }
+            current_char += 2;
+
+            int32_t offset_y = strtol(current_char, &current_char, 10);
+            
+            bounding_boxes[bound_index++] = (GlyphData){width, offset_x, offset_y};
             if (bound_index == count) {
                 fclose(file);
                 fprintf(stderr, "successfuly importet file\n");
@@ -178,8 +200,8 @@ int32_t main(int32_t argc, char** argv) {
     int32_t current_char = 0;
     Vector2I focused_char = (Vector2I){0};
     bool focus_char = false;
-    Vector2 bounding_box[sym_total];
-    memset(bounding_box, 0, sizeof(Vector2) * sym_total);
+    GlyphData glyphs[sym_total];
+    memset(glyphs, 0, sizeof(Vector2) * sym_total);
 
     // Raylib texture loading
     Texture2D image = LoadTexture(argv[1]);
@@ -231,10 +253,11 @@ int32_t main(int32_t argc, char** argv) {
         DrawTexturePro(image, src, dst, (Vector2){0, 0}, 0.0f, WHITE);
 
         if (focus_char) {
-            Vector2 dim = bounding_box[current_char];
-            float percent_size = dim.x / char_size;
-            float percent_offset = dim.y / char_size;
-            DrawRectangle((dst.width / 2) - (percent_size * dst.width) / 2 + percent_offset * dst.width, 0,
+            GlyphData glyph = glyphs[current_char];
+            float percent_size = glyph.width / char_size;
+            float percent_offset_x = glyph.offset_x / char_size;
+            float percent_offset_y = glyph.offset_y / char_size;
+            DrawRectangle((dst.width / 2) - (percent_size * dst.width) / 2 + percent_offset_x * dst.width, 0,
                           percent_size * dst.width, dst.height, (Color){225, 24, 12, 120});
         }
 
@@ -275,16 +298,20 @@ int32_t main(int32_t argc, char** argv) {
 
         current_y += padding_y;
         bounds.y = current_y;
-        GuiSlider(bounds, "Left", "Right", &bounding_box[current_char].x, 1.0f, char_size);
+        GuiSlider(bounds, "Left", "Right", &glyphs[current_char].width, 1.0f, char_size);
 
         current_y += padding_y;
         bounds.y = current_y;
-        GuiSlider(bounds, "Left", "Right", &bounding_box[current_char].y, -char_size / 4.0f, char_size / 4.0f);
+        GuiSlider(bounds, "Left", "Right", &glyphs[current_char].offset_x, -char_size / 4.0f, char_size / 4.0f);
+
+        current_y += padding_y;
+        bounds.y = current_y;
+        GuiSlider(bounds, "Left", "Right", &glyphs[current_char].offset_y, -char_size / 4.0f, char_size / 4.0f);
 
         current_y += padding_y;
         bounds.y = current_y;
         if (GuiButton(bounds, "Auto Detect")) {
-            auto_detect_images(&image_data, char_size, char_offset_x, char_offset_y, bounding_box, sym_total, auto_detection_threshold, auto_detection_padding);
+            auto_detect_images(&image_data, char_size, char_offset_x, char_offset_y, glyphs, sym_total, auto_detection_threshold, auto_detection_padding);
         }
 
         current_y += padding_y;
@@ -305,13 +332,13 @@ int32_t main(int32_t argc, char** argv) {
         current_y += padding_y;
         bounds.y = current_y;
         if (GuiButton(bounds, "Export")) {
-            export(bounding_box, sym_total);
+            export(glyphs, sym_total);
         }
 
         current_y += padding_y;
         bounds.y = current_y;
         if (GuiButton(bounds, "Import")) {
-            import("array.h", bounding_box, sym_total);
+            import("array.h", glyphs, sym_total);
         }
 
         EndDrawing();
