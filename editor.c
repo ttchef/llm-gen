@@ -190,7 +190,7 @@ void draw_ui_tab(int32_t* tab, bool* focus_char, Vector2I* focused_char, int32_t
     int32_t ui_start_X = window_width * texture_width;
     int32_t ui_width_pixels = window_width * ui_width;
     int32_t padding_x = ui_width_pixels * 0.1f;
-    int32_t padding_y = window_height * 0.1f;
+    int32_t padding_y = window_height * 0.09f;
     int32_t ui_width_padding = ui_width_pixels - 2 * padding_x;
     int32_t current_y = padding_y;
     int32_t buttonHeight = window_height * 0.2f;
@@ -381,23 +381,7 @@ int32_t main(int32_t argc, char** argv) {
         }
 
         DrawRectangle(window_width * texture_width, 0, window_width * ui_width, window_height, DARKGRAY);
-
-        // UI
-        int32_t ui_start_X = window_width * texture_width;
-        int32_t ui_width_pixels = window_width * ui_width;
-        int32_t padding_x = ui_width_pixels * 0.1f;
-        int32_t padding_y = window_height * 0.08f;
-        int32_t ui_width_padding = ui_width_pixels - 2 * padding_x;
-        int32_t current_y = padding_y;
-        int32_t buttonHeight = window_height * 0.2f;
-
-        Rectangle bounds = {
-            .x = ui_start_X + padding_x,
-            .y = current_y,
-            .width = ui_width_padding,
-            .height = 50,
-        };
-              
+             
         draw_ui_tab(&current_tab, &focus_char, &focused_char, current_char, glyphs, &image_data,
                     auto_detection_threshold, auto_detection_padding, tabs_count, tabs_name);
 
