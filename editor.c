@@ -81,7 +81,8 @@ static void detect_gylph_data(RawImageData* image_data, float char_size, Vector2
         float glyph_center_x = min_x + glyph->width * 0.5f;
         glyph->offset_x = glyph_center_x - (cell_px * 0.5f);
     }
-    glyph->offset_x += auto_detection_padding;
+
+    glyph->width += auto_detection_padding;
 }
 
 static void auto_detect_images(RawImageData* image_data, float char_size, int32_t char_offset_x,
@@ -185,8 +186,8 @@ static void import(const char* filepath, GlyphData* bounding_boxes, size_t count
 }
 
 void draw_ui_tab(int32_t* tab, bool* focus_char, Vector2I* focused_char, int32_t current_char,
-                 GlyphData* glyphs, RawImageData* image_data, uint8_t auto_detection_threshold,
-                 int32_t auto_detection_padding, int32_t tabs_count, const char** tabs_name) {
+                 GlyphData* glyphs, RawImageData* image_data, uint8_t* auto_detection_threshold,
+                 int32_t* auto_detection_padding, int32_t tabs_count, const char** tabs_name) {
     int32_t ui_start_X = window_width * texture_width;
     int32_t ui_width_pixels = window_width * ui_width;
     int32_t padding_x = ui_width_pixels * 0.1f;
@@ -232,12 +233,13 @@ void draw_ui_tab(int32_t* tab, bool* focus_char, Vector2I* focused_char, int32_t
     bounds.x = ui_start_X + padding_x;
     bounds.width = ui_width_padding;
 
+    current_y += padding_y;
+    bounds.y = current_y;
+
     // check bounds for tab
     if (*tab < 0 || *tab > 3) *tab = 0;
     switch (*tab) {
         case 0: {
-            current_y += padding_y;
-            bounds.y = current_y;
             GuiSlider(bounds, "Left", "Right", &glyphs[current_char].width, 1.0f, char_size);
 
             current_y += padding_y;
@@ -251,28 +253,34 @@ void draw_ui_tab(int32_t* tab, bool* focus_char, Vector2I* focused_char, int32_t
             break;
         }
         case 1: {
-            current_y += padding_y;
-            bounds.y = current_y;
             if (GuiButton(bounds, "Auto Detect")) {
-                auto_detect_images(image_data, char_size, char_offset_x, char_offset_y, glyphs, sym_total, auto_detection_threshold, auto_detection_padding);
+                auto_detect_images(image_data, char_size, char_offset_x, char_offset_y, glyphs,
+                                   sym_total, *auto_detection_threshold, *auto_detection_padding);
             }
 
             current_y += padding_y;
             bounds.y = current_y;
-            float tmp_threshold = auto_detection_threshold;
+            float tmp_threshold = *auto_detection_threshold;
             GuiSlider(bounds, "Left", "Right", &tmp_threshold, 1, 255);
-            auto_detection_threshold = tmp_threshold;
+            *auto_detection_threshold = tmp_threshold;
 
-            bounds.width = ui_width_padding * 0.25f;
-            bounds.x = ui_start_X + ui_width_padding * 0.75f;
             current_y += padding_y;
             bounds.y = current_y;
-            static bool edit_mode = false;
-            if (GuiValueBox(bounds, "Auto Detection Extra Padding", &auto_detection_padding, 0, char_size, edit_mode)) edit_mode = !edit_mode;
+            float tmp_padding = *auto_detection_padding;
+            GuiSlider(bounds, "Left", "Right", &tmp_padding, 1, 15);
+            *auto_detection_padding = tmp_padding;
 
             break;
         }
         case 2: {
+            static bool checked = false;
+            GuiCheckBox(bounds, "Show Base Line", &checked);
+            current_y += padding_y;
+            bounds.y = current_y;
+
+            if (checked) {
+                fprintf(stderr, "checked\n");
+            }
             break;
         }
     }
@@ -326,6 +334,8 @@ int32_t main(int32_t argc, char** argv) {
 
     uint8_t auto_detection_threshold = 120;
     int32_t auto_detection_padding = 0;
+
+    // Ui stuff
     int32_t current_tab = 0;
 
     const int32_t tabs_count = 3;
@@ -333,7 +343,6 @@ int32_t main(int32_t argc, char** argv) {
     tabs_name[0] = "Manual";
     tabs_name[1] = "Auto";
     tabs_name[2] = "Offset Y";
-
 
     while (!WindowShouldClose()) {
         window_width = GetScreenWidth();
@@ -354,7 +363,7 @@ int32_t main(int32_t argc, char** argv) {
             src.height = char_size;
         }
         image_ratio = (float)src.width / (float)src.height;
-        
+
         float dst_width = window_width * texture_width;
         float dst_height = dst_width / image_ratio;
 
@@ -381,9 +390,9 @@ int32_t main(int32_t argc, char** argv) {
         }
 
         DrawRectangle(window_width * texture_width, 0, window_width * ui_width, window_height, DARKGRAY);
-             
+
         draw_ui_tab(&current_tab, &focus_char, &focused_char, current_char, glyphs, &image_data,
-                    auto_detection_threshold, auto_detection_padding, tabs_count, tabs_name);
+                    &auto_detection_threshold, &auto_detection_padding, tabs_count, tabs_name);
 
         EndDrawing();
     }
