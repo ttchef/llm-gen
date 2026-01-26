@@ -286,7 +286,8 @@ void draw_ui_tab(int32_t* tab, bool* focus_char, Vector2I* focused_char, int32_t
 
             if (checked) {
                 float percent_offset_y = glyphs[*current_char].offset_y / char_size;
-                DrawRectangle(0, dst_height * 0.97f - dst_height * percent_offset_y, dst_width, dst_height * 0.05f, Fade(PURPLE, 0.5f));
+                // Base Line
+                DrawRectangle(0, dst_height - dst_height * percent_offset_y, dst_width, dst_height * 0.05f, Fade(PURPLE, 0.5f));
             }
             break;
         }
@@ -326,7 +327,7 @@ int32_t main(int32_t argc, char** argv) {
     Vector2I focused_char = (Vector2I){0};
     bool focus_char = false;
     GlyphData glyphs[sym_total];
-    memset(glyphs, 0, sizeof(Vector2) * sym_total);
+    memset(glyphs, 0, sizeof(GlyphData) * sym_total);
 
     // Raylib texture loading
     Texture2D image = LoadTexture(argv[1]);
