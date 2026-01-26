@@ -1,7 +1,5 @@
 # llm-gen
 
-Raygui is not nice so i made my own little ui library
-
 # Dependencies
  - raylib (for editor)
  - curl

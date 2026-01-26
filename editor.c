@@ -185,9 +185,10 @@ static void import(const char* filepath, GlyphData* bounding_boxes, size_t count
     fclose(file);
 }
 
-void draw_ui_tab(int32_t* tab, bool* focus_char, Vector2I* focused_char, int32_t current_char,
+void draw_ui_tab(int32_t* tab, bool* focus_char, Vector2I* focused_char, int32_t* current_char,
                  GlyphData* glyphs, RawImageData* image_data, uint8_t* auto_detection_threshold,
-                 int32_t* auto_detection_padding, int32_t tabs_count, const char** tabs_name) {
+                 int32_t* auto_detection_padding, int32_t tabs_count, const char** tabs_name,
+                 int32_t dst_width, int32_t dst_height) {
     int32_t ui_start_X = window_width * texture_width;
     int32_t ui_width_pixels = window_width * ui_width;
     int32_t padding_x = ui_width_pixels * 0.1f;
@@ -209,18 +210,21 @@ void draw_ui_tab(int32_t* tab, bool* focus_char, Vector2I* focused_char, int32_t
     current_y += padding_y;
     bounds.y = current_y;
     if (GuiButton(bounds, "Next Char") && *focus_char) {
-        if (current_char + 1 < sym_total) current_char++;
-        focused_char->x = current_char % sym_per_line;
-        focused_char->y = current_char / sym_per_line;
+        if (*current_char + 1 < sym_total) (*current_char)++;
+        focused_char->x = *current_char % sym_per_line;
+        focused_char->y = *current_char / sym_per_line;
     }
 
     current_y += padding_y;
     bounds.y = current_y;
     if (GuiButton(bounds, "Previous Char") && *focus_char) {
-        if (current_char - 1 >= 0) current_char--; 
-        focused_char->x = current_char % sym_per_line;
-        focused_char->y = current_char / sym_per_line;
+        if (*current_char - 1 >= 0) (*current_char)--; 
+        focused_char->x = *current_char % sym_per_line;
+        focused_char->y = *current_char / sym_per_line;
     }
+
+    current_y += padding_y;
+    bounds.y = current_y;
 
     // Tab Menu
     bounds.width /= tabs_count;
@@ -240,15 +244,15 @@ void draw_ui_tab(int32_t* tab, bool* focus_char, Vector2I* focused_char, int32_t
     if (*tab < 0 || *tab > 3) *tab = 0;
     switch (*tab) {
         case 0: {
-            GuiSlider(bounds, "Left", "Right", &glyphs[current_char].width, 1.0f, char_size);
+            GuiSlider(bounds, "Left", "Right", &glyphs[*current_char].width, 1.0f, char_size);
 
             current_y += padding_y;
             bounds.y = current_y;
-            GuiSlider(bounds, "Left", "Right", &glyphs[current_char].offset_x, -char_size / 4.0f, char_size / 4.0f);
+            GuiSlider(bounds, "Left", "Right", &glyphs[*current_char].offset_x, -char_size / 4.0f, char_size / 4.0f);
 
             current_y += padding_y;
             bounds.y = current_y;
-            GuiSlider(bounds, "Left", "Right", &glyphs[current_char].offset_y, -char_size / 4.0f, char_size / 4.0f);
+            GuiSlider(bounds, "Left", "Right", &glyphs[*current_char].offset_y, -char_size / 4.0f, char_size / 4.0f);
 
             break;
         }
@@ -278,8 +282,11 @@ void draw_ui_tab(int32_t* tab, bool* focus_char, Vector2I* focused_char, int32_t
             current_y += padding_y;
             bounds.y = current_y;
 
+            GuiSlider(bounds, "Left", "Right", &glyphs[*current_char].offset_y, 0, char_size);
+
             if (checked) {
-                fprintf(stderr, "checked\n");
+                float percent_offset_y = glyphs[*current_char].offset_y / char_size;
+                DrawRectangle(0, dst_height * 0.97f - dst_height * percent_offset_y, dst_width, dst_height * 0.05f, Fade(PURPLE, 0.5f));
             }
             break;
         }
@@ -383,16 +390,14 @@ int32_t main(int32_t argc, char** argv) {
             GlyphData glyph = glyphs[current_char];
             float percent_size = glyph.width / char_size;
             float percent_offset_x = glyph.offset_x / char_size;
-            float percent_offset_y = glyph.offset_y / char_size;
             int32_t pos_x = (dst.width / 2) - (percent_size * dst.width) / 2 + percent_offset_x * dst.width;
-            int32_t pos_y = percent_offset_y * dst.width;
-            DrawRectangle(pos_x, pos_y, percent_size * dst.width, dst.height, (Color){225, 24, 12, 120});
+            DrawRectangle(pos_x, 0, percent_size * dst.width, dst.height, (Color){225, 24, 12, 120});
         }
 
         DrawRectangle(window_width * texture_width, 0, window_width * ui_width, window_height, DARKGRAY);
 
-        draw_ui_tab(&current_tab, &focus_char, &focused_char, current_char, glyphs, &image_data,
-                    &auto_detection_threshold, &auto_detection_padding, tabs_count, tabs_name);
+        draw_ui_tab(&current_tab, &focus_char, &focused_char, &current_char, glyphs, &image_data,
+                    &auto_detection_threshold, &auto_detection_padding, tabs_count, tabs_name, dst.width, dst.height);
 
         EndDrawing();
     }
