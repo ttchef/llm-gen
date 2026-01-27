@@ -4,10 +4,10 @@ CFLAGS = -g
 
 .PHONY: main editor ocr pdf clean
 
-all: main editor ocr pdf
+all: generate editor ocr pdf
 
-main:
-	$(CC) $(CFLAGS) main.c -o main -lcurl -lwsJson -lm
+generate:
+	$(CC) $(CFLAGS) generate.c -o generate -lcurl -lwsJson -lm
 
 editor:
 	$(CC) $(CFLAGS) editor.c ui.c -o editor -lm -lraylib
