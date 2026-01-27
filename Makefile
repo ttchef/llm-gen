@@ -2,7 +2,7 @@
 CC = gcc
 CFLAGS = -g 
 
-.PHONY: main editor clean
+.PHONY: main editor ocr clean
 
 all: main editor
 
@@ -11,6 +11,9 @@ main:
 
 editor:
 	$(CC) $(CFLAGS) editor.c ui.c -o editor -lm -lraylib
+
+ocr: 
+	$(CC) $(CFLAGS) ocr.c -o ocr 
  
 clean:
 	rm main editor

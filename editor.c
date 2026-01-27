@@ -103,7 +103,7 @@ static void export(GlyphData* bounding_boxes, size_t count) {
         exit(1);
     }
 
-    fprintf(file, "\nstruct Glyph {\n\tuint32_t width;\n\tint32_t offset_x;\n\tin32_t offset_y;\n};\n\n");
+    fprintf(file, "\nstruct Glyph {\n\tuint32_t width;\n\tint32_t offset_x;\n\tint32_t offset_y;\n};\n\n");
     fprintf(file, "const struct Glyph font_widths[256] = {\n");
 
     for (int32_t i = 0; i < count; i++) {
