@@ -1,7 +1,8 @@
 
 struct Glyph {
 	uint32_t width;
-	int32_t offset;
+	int32_t offset_x;
+    int32_t offset_y;
 };
 
 const struct Glyph font_widths[256] = {

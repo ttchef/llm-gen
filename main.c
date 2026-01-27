@@ -70,10 +70,14 @@ static inline uint32_t get_char_width(uint8_t c) {
     return width;
 }
 
-static inline int32_t get_char_offset(uint8_t c) {
-    int32_t offset = font_widths[c].offset;
+static inline int32_t get_char_offset_x(uint8_t c) {
+    int32_t offset = font_widths[c].offset_x;
     return offset;
+}
 
+static inline int32_t get_char_offset_y(uint8_t c) {
+    int32_t offset = font_widths[c].offset_y;
+    return offset;
 }
 
 static int32_t count_rows(const char* text, size_t len, float char_size, int32_t pixels_horizontal) {
@@ -104,7 +108,8 @@ static int32_t count_rows(const char* text, size_t len, float char_size, int32_t
 
 static void add_tile(struct TileInfo* info) {
     const uint32_t pixels_char_horizontal = get_char_width(info->character);
-    const int32_t char_offset = get_char_offset(info->character);
+    const int32_t char_offset_x = get_char_offset_x(info->character);
+    const int32_t char_offset_y = get_char_offset_y(info->character);;
     const uint32_t atlas_center_offset = info->char_size / 2 - pixels_char_horizontal / 2;
     const int32_t tile_center_x = info->offset_x + (info->char_size / 2);
 
@@ -118,10 +123,10 @@ static void add_tile(struct TileInfo* info) {
     for (int32_t y = 0; y < info->char_size; y++) {
         for (int32_t x = 0; x < pixels_char_horizontal; x++) {
             uint32_t dst_x = info->current_x + x;
-            uint32_t dst_y = info->current_y + y;
+            uint32_t dst_y = info->current_y + char_offset_y + y;
             uint32_t dst_offset = (dst_y * info->max_pixels_horizontal + dst_x) * info->channels;
 
-            uint32_t src_x = info->offset_x + (info->char_size / 2) - pixels_char_horizontal / 2 + x;
+            uint32_t src_x = info->offset_x + (info->char_size / 2) - pixels_char_horizontal / 2 + char_offset_x + x;
             uint32_t src_y = info->offset_y + y;
             uint32_t src_offset = (src_y * info->input_width + src_x) * info->channels;
 
