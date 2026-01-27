@@ -27,6 +27,6 @@ ocr:
 pdf:
 	$(CC) $(CFLAGS) pdf.c -o pdf -lm -lmupdf -lmupdf-third -lm
 clean:
-	rm main editor ocr pdf
+	rm main editor ocr pdf generate
 
 
