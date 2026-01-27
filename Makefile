@@ -1,6 +1,15 @@
 
+
+SRC_DIR = src
+INCLUDE_DIR = include
+
+SRC_FILES = $(wildcard SRC_DIR/**.c)
+OBJ_FILES = $(SRC_FILES:.c=.o)
+
+GUI ?= true
+
 CC = gcc
-CFLAGS = -g 
+CFLAGS = -g
 
 .PHONY: main editor ocr pdf clean
 

@@ -1,5 +1,8 @@
 # llm-gen
 
+Project is in construction!!!
+Only linux
+
 # Dependencies
  - raylib (for editor)
  - curl
