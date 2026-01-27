@@ -10,7 +10,7 @@ main:
 	$(CC) $(CFLAGS) main.c -o main -lcurl -lwsJson -lm
 
 editor:
-	$(CC) $(CFLAGS) editor.c -o editor -lm -lraylib
+	$(CC) $(CFLAGS) editor.c ui.c -o editor -lm -lraylib
  
 clean:
 	rm main editor

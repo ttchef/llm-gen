@@ -10,10 +10,11 @@
 #define RAYGUI_IMPLEMENTATION
 #include "raygui.h"
 
-#define STB_IMAGE_IMPLEMENTATION
+//#define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 
 #include "utils.h"
+#include "ui.h"
 
 // global because i dont care rn
 int32_t window_width = 1200;
@@ -214,6 +215,14 @@ void draw_ui_tab(int32_t* tab, bool* focus_char, Vector2I* focused_char, int32_t
         focused_char->x = *current_char % sym_per_line;
         focused_char->y = *current_char / sym_per_line;
     }
+
+    uiRect test = {
+        .x = bounds.x,
+        .y = bounds.y, 
+        .width = bounds.width,
+        .height = bounds.height,
+    };  
+    if (uiButton(test)) printf("yoo wsp\n");
 
     current_y += padding_y;
     bounds.y = current_y;
