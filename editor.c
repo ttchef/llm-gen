@@ -327,6 +327,18 @@ int32_t main(int32_t argc, char** argv) {
         window_width = GetScreenWidth();
         window_height = GetScreenHeight();
 
+        // use A and D to go to next or previous character
+        if (focus_char && IsKeyPressed(KEY_D)) {
+            if (current_char + 1 < sym_total) current_char++;
+            focused_char.x = current_char % sym_per_line;
+            focused_char.y = current_char / sym_per_line;
+        }
+        else if (focus_char && IsKeyPressed(KEY_A)) {
+            if (current_char - 1 >= 0) current_char--;
+            focused_char.x = current_char % sym_per_line;
+            focused_char.y = current_char / sym_per_line;
+        }
+
         BeginDrawing();
         ClearBackground(BLACK);
 
