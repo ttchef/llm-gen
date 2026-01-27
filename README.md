@@ -5,6 +5,7 @@
  - curl
  - tesseract 
  - leptonica (tesseract dependencie)
+ - mupdf
  - wsJson (own Json library)
 
 ## Single Headers

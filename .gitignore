@@ -2,4 +2,5 @@ main
 stream
 editor
 ocr
+pdf
 *.txt
