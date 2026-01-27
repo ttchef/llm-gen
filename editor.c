@@ -196,7 +196,7 @@ void draw_ui_tab(int32_t* tab, bool* focus_char, Vector2I* focused_char, int32_t
         .width = window_width * ui_width,
         .height = window_height,
         .padding_x = info.width * 0.1f,
-        .padding_y = info.height * 0.01f,
+        .padding_y = info.height * 0.03f,
         .element_height = 50,
     };
 
@@ -221,11 +221,12 @@ void draw_ui_tab(int32_t* tab, bool* focus_char, Vector2I* focused_char, int32_t
     // Tab Menu
     bounds.width /= tabs_count;
     for (int32_t i = 0; i < tabs_count; i++) {
-        if (uiButton(&bounds, tabs_name[i])) {
+        if (uiButtonEx(&bounds, tabs_name[i], false)) {
             *tab = i;
         }
         bounds.x += bounds.width;
     }
+    uiInfoAddElement(bounds.height);
 
     // check bounds for tab
     if (*tab < 0 || *tab > 3) *tab = 0;

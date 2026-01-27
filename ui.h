@@ -30,6 +30,7 @@ void uiEnd(uiInfo* info);
 
 /* Baiscally wrappers for raygui tho with bounds customisation */
 int32_t uiButton(Rectangle* bounds, const uint8_t* text);
+int32_t uiButtonEx(Rectangle* bounds, const uint8_t* text, bool padding_y);
 int32_t uiSlider(Rectangle* bounds, const uint8_t* text_left, const uint8_t* text_right, float* val, float min_val, float max_val);
 int32_t uiCheckBox(Rectangle* bounds, const uint8_t* text, bool* checked);
 
@@ -37,6 +38,7 @@ Rectangle uiGetCurrentRect();
 
 static inline uiInfo* uiGetCurrentInfo() { return &_ui_global_info; }
 static inline int32_t* uiGetCurrentY() { return &_ui_global_current_y; }
+void uiInfoAddElement(int32_t height);
 
 /*
     modifies bounds so the overall slider (with the text) 
