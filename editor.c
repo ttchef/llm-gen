@@ -190,108 +190,74 @@ void draw_ui_tab(int32_t* tab, bool* focus_char, Vector2I* focused_char, int32_t
                  GlyphData* glyphs, RawImageData* image_data, uint8_t* auto_detection_threshold,
                  int32_t* auto_detection_padding, int32_t tabs_count, const char** tabs_name,
                  int32_t dst_width, int32_t dst_height) {
-    int32_t ui_start_X = window_width * texture_width;
-    int32_t ui_width_pixels = window_width * ui_width;
-    int32_t padding_x = ui_width_pixels * 0.1f;
-    int32_t padding_y = window_height * 0.09f;
-    int32_t ui_width_padding = ui_width_pixels - 2 * padding_x;
-    int32_t current_y = padding_y;
-    int32_t buttonHeight = window_height * 0.2f;
-
-    Rectangle bounds = {
-        .x = ui_start_X + padding_x,
-        .y = current_y,
-        .width = ui_width_padding,
-        .height = 50,
+    uiInfo info = {
+        .start_x = window_width * texture_width,
+        .start_y = 0,
+        .width = window_width * ui_width,
+        .height = window_height,
+        .padding_x = info.width * 0.1f,
+        .padding_y = info.height * 0.01f,
+        .element_height = 50,
     };
 
-    // general
-    if (GuiButton(bounds, "Focus Character")) *focus_char = !*focus_char;
+    uiBegin(&info);
 
-    current_y += padding_y;
-    bounds.y = current_y;
-    if (GuiButton(bounds, "Next Char") && *focus_char) {
+    if (uiButton(NULL, "Focus Character")) *focus_char = !*focus_char;
+
+    if (uiButton(NULL, "Next Char") && *focus_char) {
         if (*current_char + 1 < sym_total) (*current_char)++;
         focused_char->x = *current_char % sym_per_line;
         focused_char->y = *current_char / sym_per_line;
     }
 
-    uiRect test = {
-        .x = bounds.x,
-        .y = bounds.y, 
-        .width = bounds.width,
-        .height = bounds.height,
-    };  
-    if (uiButton(test)) printf("yoo wsp\n");
-
-    current_y += padding_y;
-    bounds.y = current_y;
-    if (GuiButton(bounds, "Previous Char") && *focus_char) {
+    if (uiButton(NULL, "Previous Char") && *focus_char) {
         if (*current_char - 1 >= 0) (*current_char)--; 
         focused_char->x = *current_char % sym_per_line;
         focused_char->y = *current_char / sym_per_line;
     }
 
-    current_y += padding_y;
-    bounds.y = current_y;
+    Rectangle bounds = uiGetCurrentRect();
 
     // Tab Menu
     bounds.width /= tabs_count;
     for (int32_t i = 0; i < tabs_count; i++) {
-        if (GuiButton(bounds, tabs_name[i])) {
+        if (uiButton(&bounds, tabs_name[i])) {
             *tab = i;
         }
         bounds.x += bounds.width;
     }
-    bounds.x = ui_start_X + padding_x;
-    bounds.width = ui_width_padding;
-
-    current_y += padding_y;
-    bounds.y = current_y;
 
     // check bounds for tab
     if (*tab < 0 || *tab > 3) *tab = 0;
     switch (*tab) {
         case 0: {
-            GuiSlider(bounds, "Left", "Right", &glyphs[*current_char].width, 1.0f, char_size);
+            uiSlider(NULL, "Width", NULL, &glyphs[*current_char].width, 1.0f, char_size);
 
-            current_y += padding_y;
-            bounds.y = current_y;
-            GuiSlider(bounds, "Left", "Right", &glyphs[*current_char].offset_x, -char_size / 4.0f, char_size / 4.0f);
-
-            current_y += padding_y;
-            bounds.y = current_y;
-            GuiSlider(bounds, "Left", "Right", &glyphs[*current_char].offset_y, -char_size / 4.0f, char_size / 4.0f);
-
+            uiSlider(NULL, "Offset X", NULL, &glyphs[*current_char].offset_x, -char_size / 4.0f, char_size / 4.0f);
             break;
         }
         case 1: {
-            if (GuiButton(bounds, "Auto Detect")) {
+            if (uiButton(NULL, "Auto Detect")) {
                 auto_detect_images(image_data, char_size, char_offset_x, char_offset_y, glyphs,
                                    sym_total, *auto_detection_threshold, *auto_detection_padding);
             }
 
-            current_y += padding_y;
-            bounds.y = current_y;
+            const uint8_t* threshold_text = "Threshold";
             float tmp_threshold = *auto_detection_threshold;
-            GuiSlider(bounds, "Left", "Right", &tmp_threshold, 1, 255);
+            uiSlider(NULL, threshold_text, NULL, &tmp_threshold, 1, 255);
             *auto_detection_threshold = tmp_threshold;
 
-            current_y += padding_y;
-            bounds.y = current_y;
             float tmp_padding = *auto_detection_padding;
-            GuiSlider(bounds, "Left", "Right", &tmp_padding, 1, 15);
+            uiSlider(NULL, "Padding", NULL, &tmp_padding, 1, 15);
             *auto_detection_padding = tmp_padding;
 
             break;
         }
         case 2: {
             static bool checked = false;
-            GuiCheckBox(bounds, "Show Base Line", &checked);
-            current_y += padding_y;
-            bounds.y = current_y;
+            uiCheckBox(NULL, "Show Base Line", &checked);
 
-            GuiSlider(bounds, "Left", "Right", &glyphs[*current_char].offset_y, 0, char_size);
+            uiSlider(NULL, "Offset Y", NULL, &glyphs[*current_char].offset_y, 0, char_size);
 
             if (checked) {
                 float percent_offset_y = glyphs[*current_char].offset_y / char_size;
@@ -302,20 +268,15 @@ void draw_ui_tab(int32_t* tab, bool* focus_char, Vector2I* focused_char, int32_t
         }
     }
 
-    bounds.width = ui_width_padding;
-    bounds.x = ui_start_X + padding_x;
-
-    current_y += padding_y;
-    bounds.y = current_y;
-    if (GuiButton(bounds, "Export")) {
+    if (uiButton(NULL, "Export")) {
         export(glyphs, sym_total);
     }
 
-    current_y += padding_y;
-    bounds.y = current_y;
-    if (GuiButton(bounds, "Import")) {
+    if (uiButton(NULL, "Import")) {
         import("array.h", glyphs, sym_total);
     }
+
+    uiEnd(&info);
 
 }
 
