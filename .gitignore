@@ -5,3 +5,4 @@ ocr
 pdf
 generate
 *.txt
+build/
