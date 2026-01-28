@@ -5,6 +5,11 @@
 #include <stdlib.h>
 
 #include <containers/darray.h>
+#include <sys_utils.h>
+
+#ifndef BUILD_DIR
+#error "Need to definie BUILD_DIR as your build directory"
+#endif
 
 enum {
     ARG_MODE_PROMPT,
@@ -50,15 +55,10 @@ int32_t main(int32_t argc, char** argv) {
         };
     }
 
-    for (int32_t i = 0; i < darrayLength(prompt); i++) {
-        fprintf(stderr, "PROMPT: %s\n", prompt[i]);
-    }
-    for (int32_t i = 0; i < darrayLength(imgs); i++) {
-        fprintf(stderr, "IMG: %s\n", imgs[i]);
-    }
-    for (int32_t i = 0; i < darrayLength(pdfs); i++) {
-        fprintf(stderr, "PDF: %s\n", pdfs[i]);
-    }
+    create_dir_if_not_exists(BUILD_DIR"/generate");
+    FILE* file = fopen(BUILD_DIR"/generate/file.txt", "w");
+    fclose(file);
+    remove_dir(BUILD_DIR"/generate");
 
     darrayDestroy(prompt);
     darrayDestroy(imgs);

@@ -17,6 +17,8 @@ SRC_FILES += $(shell find $(VENDOR_DIR) -type f -name '*.c')
 SRC_FILES := $(filter-out $(SRC_DIR)/cli.c, $(SRC_FILES))
 SRC_FILES := $(filter-out $(SRC_DIR)/server.c, $(SRC_FILES))
 
+SRC_FILES := $(filter-out $(SRC_DIR)/pdf.c, $(SRC_FILES))
+
 ifeq ($(GUI),true)
 	SRC_FILES += $(SRC_DIR)/cli.c
 else 
@@ -26,12 +28,12 @@ endif
 OBJ_FILES := $(patsubst $(SRC_DIR)/%.c,$(BUILD_DIR)/%.o,$(SRC_FILES))
 
 CC := gcc
-CFLAGS := -g -I$(INCLUDE_DIR) -I$(VENDOR_DIR)
-LDFLAGS := -lraylib -lm
+CFLAGS := -g -I$(INCLUDE_DIR) -I$(VENDOR_DIR) -DBUILD_DIR=\"$(BUILD_DIR)\"
+LDFLAGS := -lraylib -lmupdf -lmupdf-third -lm
 
-.PHONY: app editor ocr pdf clean generate
+.PHONY: app editor ocr clean generate
 
-all: folders app generate editor ocr pdf $(OBJ_FILES)
+all: folders app generate editor ocr
 
 folders:
 	mkdir -p $(BUILD_DIR)
@@ -49,13 +51,10 @@ editor:
 ocr: 
 	$(CC) $(CFLAGS) ocr.c -o ocr -llept -ltesseract
 
-pdf:
-	$(CC) $(CFLAGS) pdf.c -o pdf -lm -lmupdf -lmupdf-third -lm
-
 $(BUILD_DIR)/%.o: $(SRC_DIR)/%.c 
 	$(CC) $(CFLAGS) -c $< -o $@
 
 clean:
-	rm -rf main editor ocr pdf generate $(BUILD_DIR)
+	rm -rf main editor ocr generate $(BUILD_DIR)
 
 
