@@ -6,4 +6,5 @@ pdf
 generate
 *.txt
 *.json
+.cache/
 build/
