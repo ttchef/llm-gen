@@ -1,25 +1,37 @@
 
 
-SRC_DIR = src
-INCLUDE_DIR = include
-BUILD_DIR = build
+SRC_DIR := src
+INCLUDE_DIR := include
+BUILD_DIR := build
 
-EXE_NAME = main
-
-SRC_FILES = $(shell find $(SRC_DIR) -type f -name '*.c')
-OBJ_FILES = $(patsubst $(SRC_DIR)/%.c,$(BUILD_DIR)/%.o,$(SRC_FILES))
+EXE_NAME := main
 
 GUI ?= true
 
-CC = gcc
-CFLAGS = -g -I$(INCLUDE_DIR)
+SRC_FILES := $(shell find $(SRC_DIR) -type f -name '*.c')
+
+# Remove both entry points
+SRC_FILES := $(filter-out $(SRC_DIR)/gui.c, $(SRC_FILES))
+SRC_FILES := $(filter-out $(SRC_DIR)/server.c, $(SRC_FILES))
+
+ifeq ($(GUI),true)
+	SRC_FILES += $(SRC_DIR)/gui.c
+else 
+	SRC_FILES += $(SRC_DIR)/server.c 
+endif
+
+OBJ_FILES := $(patsubst $(SRC_DIR)/%.c,$(BUILD_DIR)/%.o,$(SRC_FILES))
+
+CC := gcc
+CFLAGS := -g -I$(INCLUDE_DIR)
 
 .PHONY: app editor ocr pdf clean generate
 
-all: $(BUILD_DIR) app generate editor ocr pdf $(OBJ_FILES)
+all: folders app generate editor ocr pdf $(OBJ_FILES)
 
-$(BUILD_DIR):
+folders:
 	mkdir -p $(BUILD_DIR)
+	mkdir -p $(BUILD_DIR)/containers
 
 app: $(OBJ_FILES)
 	$(CC) $(CFLAGS) $^ -o $(EXE_NAME)
