@@ -24,7 +24,7 @@ int32_t main(int32_t argc, char** argv) {
         if (strcmp(argv[i], "--imgs") == 0) {
             current_mode = ARG_MODE_IMG;   
         }
-        else if (strcmp(argv[i], "-pdf") == 0) {
+        else if (strcmp(argv[i], "--pdf") == 0) {
             current_mode = ARG_MODE_PDF;   
         }
     }

@@ -6,13 +6,13 @@ BUILD_DIR = build
 
 EXE_NAME = main
 
-SRC_FILES = $(wildcard $(SRC_DIR)/*.c)
+SRC_FILES = $(shell find $(SRC_DIR) -type f -name '*.c')
 OBJ_FILES = $(patsubst $(SRC_DIR)/%.c,$(BUILD_DIR)/%.o,$(SRC_FILES))
 
 GUI ?= true
 
 CC = gcc
-CFLAGS = -g
+CFLAGS = -g -I$(INCLUDE_DIR)
 
 .PHONY: app editor ocr pdf clean generate
 
