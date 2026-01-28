@@ -60,7 +60,10 @@ int32_t main(int32_t argc, char** argv) {
         fprintf(stderr, "PDF: %s\n", pdfs[i]);
     }
 
-    
+    darrayDestroy(prompt);
+    darrayDestroy(imgs);
+    darrayDestroy(pdfs);
+
     return 0;
 }
 

@@ -7,7 +7,7 @@ Only linux
  - raylib (for editor)
  - curl
  - tesseract 
- - leptonica (tesseract dependencie)
+ - leptonica (tesseract dependency)
  - mupdf
  - wsJson (own Json library)
 

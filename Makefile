@@ -14,11 +14,11 @@ SRC_FILES := $(shell find $(SRC_DIR) -type f -name '*.c')
 SRC_FILES += $(shell find $(VENDOR_DIR) -type f -name '*.c')
 
 # Remove both entry points
-SRC_FILES := $(filter-out $(SRC_DIR)/gui.c, $(SRC_FILES))
+SRC_FILES := $(filter-out $(SRC_DIR)/cli.c, $(SRC_FILES))
 SRC_FILES := $(filter-out $(SRC_DIR)/server.c, $(SRC_FILES))
 
 ifeq ($(GUI),true)
-	SRC_FILES += $(SRC_DIR)/gui.c
+	SRC_FILES += $(SRC_DIR)/cli.c
 else 
 	SRC_FILES += $(SRC_DIR)/server.c 
 endif
