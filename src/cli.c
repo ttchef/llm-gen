@@ -10,6 +10,9 @@
 #include <pdf.h>
 #include <ocr.h>
 
+#define STB_IMAGE_IMPLEMENTATION
+#include <stb_image.h>
+
 #ifndef BUILD_DIR
 #error "Need to definie BUILD_DIR as your build directory"
 #endif
@@ -19,6 +22,40 @@ enum {
     ARG_MODE_IMG,
     ARG_MODE_PDF,
 };
+
+void get_texts(Context* ctx, char*** text_data, fz_pixmap** pdf_data, char** img_data, char** prompt_data) {
+    for (int32_t i = 0; i < darrayLength(pdf_data); i++) {
+        Image img = {
+            .type = IMAGE_TYPE_PPM,
+            .data.pix = pdf_data[i],
+        };
+        char* string = string_from_img(ctx, &img);
+        if (!string) continue;
+        darrayPush(*text_data, string);
+    }
+
+    for (int32_t i = 0; i < darrayLength(img_data); i++) {
+        Image img = {
+            .type = IMAGE_TYPE_STBI,
+        };
+
+        int32_t channels;
+        img.data.stbi.data = stbi_load(img_data[i], &img.data.stbi.width, &img.data.stbi.height, &channels, BPP);
+        if (!img.data.stbi.data) {
+            fprintf(stderr, "Failed to load image: %s\n", img_data[i]);
+            continue;
+        }
+
+        char* string = string_from_img(ctx, &img);
+        if (!string) continue;
+        darrayPush(*text_data, string);
+    }
+
+    for (int32_t i = 0; i < darrayLength(prompt_data); i++) {
+        char* string = prompt_data[i];
+        darrayPush(*text_data, string);
+    }
+} 
 
 int32_t main(int32_t argc, char** argv) {
     if (argc < 2) {
@@ -68,20 +105,20 @@ int32_t main(int32_t argc, char** argv) {
         convert_pdf_to_img(&ctx, pdfs[i], &pdf_data);
     }
 
-    for (int32_t i = 0; i < darrayLength(pdf_data); i++) {
-        Image img = {
-            .type = IMAGE_TYPE_PPM,
-            .data.pix = pdf_data[i],
-        };
-        char* string = string_from_img(&ctx, &img);
-        printf("%s\n", string);
-    }
+    char** text_data = darrayCreate(char*);
+    get_texts(&ctx, &text_data, pdf_data, imgs, prompt);
 
     darrayDestroy(pdf_data);
-    darrayDestroy(prompt);
     darrayDestroy(imgs);
     darrayDestroy(pdfs);
 
+    for (int32_t i = 0; i < darrayLength(text_data); i++) {
+        printf("%s\n", text_data[i]);
+    }
+
+    darrayDestroy(text_data);
+
+    darrayDestroy(prompt);
     deinit_ctx(&ctx);
 
     return 0;
