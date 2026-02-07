@@ -8,6 +8,7 @@
 #include <containers/darray.h>
 #include <sys_utils.h>
 #include <pdf.h>
+#include <ocr.h>
 
 #ifndef BUILD_DIR
 #error "Need to definie BUILD_DIR as your build directory"
@@ -68,7 +69,12 @@ int32_t main(int32_t argc, char** argv) {
     }
 
     for (int32_t i = 0; i < darrayLength(pdf_data); i++) {
-
+        Image img = {
+            .type = IMAGE_TYPE_PPM,
+            .data.pix = pdf_data[i],
+        };
+        char* string = string_from_img(&ctx, &img);
+        printf("%s\n", string);
     }
 
     darrayDestroy(pdf_data);
@@ -80,3 +86,4 @@ int32_t main(int32_t argc, char** argv) {
 
     return 0;
 }
+

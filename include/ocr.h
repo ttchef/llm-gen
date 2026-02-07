@@ -2,7 +2,10 @@
 #ifndef OCR_H
 #define OCR_H
 
-#include <mupdf/fitz.h>
+#include <context.h>
+
+/* Bytes per pixel */
+#define BPP 3
 
 enum ImageType {
     IMAGE_TYPE_PPM,
@@ -21,6 +24,6 @@ typedef struct Image {
     } data;
 } Image;
 
-char* string_from_img(Image* img);
+char* string_from_img(Context* ctx, Image* img);
 
 #endif // OCR_H

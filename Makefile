@@ -29,9 +29,9 @@ CC := gcc
 CFLAGS := -g -I$(INCLUDE_DIR) -I$(VENDOR_DIR) -DBUILD_DIR=\"$(BUILD_DIR)\"
 LDFLAGS := -lraylib -lmupdf -lleptonica -ltesseract -lm
 
-.PHONY: app editor ocr clean generate
+.PHONY: app editor clean generate
 
-all: folders app generate editor ocr
+all: folders app generate editor
 
 folders:
 	mkdir -p $(BUILD_DIR)
@@ -46,13 +46,10 @@ generate:
 editor:
 	$(CC) $(CFLAGS) editor.c ui.c -o editor -lm -lraylib
 
-ocr: 
-	$(CC) $(CFLAGS) ocr.c -o ocr -lleptonica -ltesseract
-
 $(BUILD_DIR)/%.o: $(SRC_DIR)/%.c 
 	$(CC) $(CFLAGS) -c $< -o $@
 
 clean:
-	rm -rf main editor ocr generate $(BUILD_DIR)
+	rm -rf main editor generate $(BUILD_DIR)
 
 
