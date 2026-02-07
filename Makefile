@@ -17,8 +17,6 @@ SRC_FILES += $(shell find $(VENDOR_DIR) -type f -name '*.c')
 SRC_FILES := $(filter-out $(SRC_DIR)/cli.c, $(SRC_FILES))
 SRC_FILES := $(filter-out $(SRC_DIR)/server.c, $(SRC_FILES))
 
-SRC_FILES := $(filter-out $(SRC_DIR)/pdf.c, $(SRC_FILES))
-
 ifeq ($(GUI),true)
 	SRC_FILES += $(SRC_DIR)/cli.c
 else 
@@ -29,7 +27,7 @@ OBJ_FILES := $(patsubst $(SRC_DIR)/%.c,$(BUILD_DIR)/%.o,$(SRC_FILES))
 
 CC := gcc
 CFLAGS := -g -I$(INCLUDE_DIR) -I$(VENDOR_DIR) -DBUILD_DIR=\"$(BUILD_DIR)\"
-LDFLAGS := -lraylib -lmupdf -lmupdf-third -lm
+LDFLAGS := -lraylib -lmupdf -lm
 
 .PHONY: app editor ocr clean generate
 
@@ -49,7 +47,7 @@ editor:
 	$(CC) $(CFLAGS) editor.c ui.c -o editor -lm -lraylib
 
 ocr: 
-	$(CC) $(CFLAGS) ocr.c -o ocr -llept -ltesseract
+	$(CC) $(CFLAGS) ocr.c -o ocr -lleptonica -ltesseract
 
 $(BUILD_DIR)/%.o: $(SRC_DIR)/%.c 
 	$(CC) $(CFLAGS) -c $< -o $@

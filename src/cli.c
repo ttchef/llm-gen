@@ -1,4 +1,5 @@
 
+#include <mupdf/fitz/color.h>
 #include <stdio.h>
 #include <stdint.h>
 #include <string.h>
@@ -6,6 +7,7 @@
 
 #include <containers/darray.h>
 #include <sys_utils.h>
+#include <pdf.h>
 
 #ifndef BUILD_DIR
 #error "Need to definie BUILD_DIR as your build directory"
@@ -56,14 +58,20 @@ int32_t main(int32_t argc, char** argv) {
     }
 
     create_dir_if_not_exists(BUILD_DIR"/generate");
-    FILE* file = fopen(BUILD_DIR"/generate/file.txt", "w");
-    fclose(file);
-    remove_dir(BUILD_DIR"/generate");
 
+    fz_pixmap** pdf_data = darrayCreate(fz_pixmap*);
+    for (int32_t i = 0; i < darrayLength(pdfs); i++) {
+        convert_pdf_to_img(pdfs[i], &pdf_data);
+    }
+
+    for (int32_t i = 0; i < darrayLength(pdf_data); i++) {
+        printf("W: %d H: %d\n", pdf_data[i]->w, pdf_data[i]->h);
+    }
+
+    darrayDestroy(pdf_data);
     darrayDestroy(prompt);
     darrayDestroy(imgs);
     darrayDestroy(pdfs);
 
     return 0;
 }
-

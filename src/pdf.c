@@ -1,124 +1,79 @@
 
-#include <mupdf/fitz.h>
+#include <mupdf/fitz/context.h>
+#include <mupdf/fitz/document.h>
+#include <mupdf/fitz/types.h>
+#include <mupdf/fitz/util.h>
+#include <pdf.h>
+
+#include <containers/darray.h>
 
 #include <stdio.h>
 #include <stdlib.h>
 
-int main(int argc, char **argv)
-{
-	char *input;
-	float zoom, rotate;
-	int page_number, page_count;
-	fz_context *ctx;
-	fz_document *doc;
-	fz_pixmap *pix;
-	fz_matrix ctm;
-	int x, y;
+int32_t convert_pdf_to_img(char *path, fz_pixmap*** pix_array) {
+    if (!pix_array) {
+        fprintf(stderr, "pix_array == NULL\n");
+        return 1;
+    }
 
-	if (argc < 3)
-	{
-		fprintf(stderr, "usage: example input-file page-number [ zoom [ rotate ] ]\n");
-		fprintf(stderr, "\tinput-file: path of PDF, XPS, CBZ or EPUB document to open\n");
-		fprintf(stderr, "\tPage numbering starts from one.\n");
-		fprintf(stderr, "\tZoom level is in percent (100 percent is 72 dpi).\n");
-		fprintf(stderr, "\tRotation is in degrees clockwise.\n");
-		return EXIT_FAILURE;
-	}
+    fz_context* ctx = fz_new_context(NULL, NULL, FZ_STORE_UNLIMITED);
+    if (!ctx) {
+        fprintf(stderr, "failed to create mupdf context\n");
+        return 1;
+    }
 
-	input = argv[1];
-	page_number = atoi(argv[2]) - 1;
-	zoom = argc > 3 ? atof(argv[3]) : 100;
-	rotate = argc > 4 ? atof(argv[4]) : 0;
+    fz_try(ctx)
+        fz_register_document_handlers(ctx);
+    fz_catch(ctx) {
+        fz_report_error(ctx);
+        fprintf(stderr, "failed to register document handlers\n");
+        fz_drop_context(ctx);
+        return 1;
+    }
 
-	/* Create a context to hold the exception stack and various caches. */
-	ctx = fz_new_context(NULL, NULL, FZ_STORE_UNLIMITED);
-	if (!ctx)
-	{
-		fprintf(stderr, "cannot create mupdf context\n");
-		return EXIT_FAILURE;
-	}
+    fz_document* doc = NULL;
 
-	/* Register the default file types to handle. */
-	fz_try(ctx)
-		fz_register_document_handlers(ctx);
-	fz_catch(ctx)
-	{
-		fz_report_error(ctx);
-		fprintf(stderr, "cannot register document handlers\n");
-		fz_drop_context(ctx);
-		return EXIT_FAILURE;
-	}
+    fz_try(ctx)
+        doc = fz_open_document(ctx, path);
+    fz_catch(ctx) {
+        fz_report_error(ctx);
+        fprintf(stderr, "failed to open pdf document: %s\n", path);
+        fz_drop_context(ctx);
+        return 1;
+    }
 
-	/* Open the document. */
-	fz_try(ctx)
-		doc = fz_open_document(ctx, input);
-	fz_catch(ctx)
-	{
-		fz_report_error(ctx);
-		fprintf(stderr, "cannot open document\n");
-		fz_drop_context(ctx);
-		return EXIT_FAILURE;
-	}
+    int32_t page_count = 0;
+    fz_try(ctx)
+        page_count = fz_count_pages(ctx, doc);
+    fz_catch(ctx) {
+        fz_report_error(ctx);
+        fprintf(stderr, "failed to get page number\n");
+        fz_drop_document(ctx, doc);
+        fz_drop_context(ctx);
+        return 1;
+    }
 
-	/* Count the number of pages. */
-	fz_try(ctx)
-		page_count = fz_count_pages(ctx, doc);
-	fz_catch(ctx)
-	{
-		fz_report_error(ctx);
-		fprintf(stderr, "cannot count number of pages\n");
-		fz_drop_document(ctx, doc);
-		fz_drop_context(ctx);
-		return EXIT_FAILURE;
-	}
+    fz_matrix matrix = fz_scale(1.0f, 1.0f);
 
-	if (page_number < 0 || page_number >= page_count)
-	{
-		fprintf(stderr, "page number out of range: %d (page count %d)\n", page_number + 1, page_count);
-		fz_drop_document(ctx, doc);
-		fz_drop_context(ctx);
-		return EXIT_FAILURE;
-	}
+    for (int32_t i = 0; i < page_count; i++) {
+        fz_pixmap* pix = NULL;
+        fz_try(ctx)
+            pix = fz_new_pixmap_from_page_number(ctx, doc, i, matrix, fz_device_rgb(ctx), 0);
+        fz_catch(ctx) {
+            fz_report_error(ctx);
+            fprintf(stderr, "failed to render page: %d\n", i);
+            fz_drop_document(ctx, doc);
+            fz_drop_context(ctx);
+            return 1;
+        }
+        
+        darrayPush(*pix_array, pix);
+    }
 
-	/* Compute a transformation matrix for the zoom and rotation desired. */
-	/* The default resolution without scaling is 72 dpi. */
-	ctm = fz_scale(zoom / 100, zoom / 100);
-	ctm = fz_pre_rotate(ctm, rotate);
+    fz_drop_document(ctx, doc);
+    fz_drop_context(ctx);
 
-	/* Render page to an RGB pixmap. */
-	fz_try(ctx)
-		pix = fz_new_pixmap_from_page_number(ctx, doc, page_number, ctm, fz_device_rgb(ctx), 0);
-	fz_catch(ctx)
-	{
-		fz_report_error(ctx);
-		fprintf(stderr, "cannot render page\n");
-		fz_drop_document(ctx, doc);
-		fz_drop_context(ctx);
-		return EXIT_FAILURE;
-	}
-
-	/* Print image data in ascii PPM format. */
-	printf("P3\n");
-	printf("%d %d\n", pix->w, pix->h);
-	printf("255\n");
-	for (y = 0; y < pix->h; ++y)
-	{
-		unsigned char *p = &pix->samples[y * pix->stride];
-		for (x = 0; x < pix->w; ++x)
-		{
-			if (x > 0)
-				printf("  ");
-			printf("%3d %3d %3d", p[0], p[1], p[2]);
-			p += pix->n;
-		}
-		printf("\n");
-	}
-
-	/* Clean up. */
-	fz_drop_pixmap(ctx, pix);
-	fz_drop_document(ctx, doc);
-	fz_drop_context(ctx);
-	return EXIT_SUCCESS;
+    return 0;
 }
 
 

@@ -10,7 +10,7 @@
 #define RAYGUI_IMPLEMENTATION
 #include "raygui.h"
 
-//#define STB_IMAGE_IMPLEMENTATION
+#define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 
 #include "utils.h"

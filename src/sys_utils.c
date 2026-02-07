@@ -7,6 +7,8 @@
 #include <unistd.h>
 #include <errno.h>
 #include <dirent.h>
+#include <string.h>
+#include <stdio.h>
 
 int32_t create_dir_if_not_exists(const char* path) {
     struct stat st = {0};
@@ -21,26 +23,40 @@ int32_t create_dir_if_not_exists(const char* path) {
 }
 
 int32_t remove_dir(const char *path) {
-    int32_t res = rmdir(path);
-    if (errno == ENOTEMPTY) {
-        fprintf(stderr, "Directory wasnt empty deleting recursive\n");
-        DIR* dir = opendir(path);
-        if (!dir) {
-            fprintf(stderr, "failed reading dir: %s\n", path);
-            return 1;
+    DIR* dir = opendir(path);
+    if (!dir) {
+        fprintf(stderr, "Failed to open directory: %s\n", path);
+        return -1;
+    }
+
+    struct dirent* entry;
+    while ((entry = readdir(dir)) != NULL) {
+        if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0) {
+            continue;
         }
 
-        struct dirent* entry = NULL;
-        while (entry = readdir(dir)) {
-            /* only files in this dir */
-            fprintf(stderr, "Entry Name: %s\n", entry->d_name);
-            res = unlink(entry->d_name);
-            if (!res) {
-                fprintf(stderr, "Unlink Error\n");
-                return 1;
+        char full_path[PATH_MAX];
+        snprintf(full_path, sizeof(full_path), "%s/%s", path, entry->d_name);
+
+        if (entry->d_type == DT_DIR) {
+            if (remove_dir(full_path) != 0) {
+                closedir(dir);
+                return -1; 
+            }
+        } else {
+            if (unlink(full_path) != 0) {
+                fprintf(stderr, "Failed to unlink file: %s\n", full_path);
+                closedir(dir);
+                return -1;
             }
         }
-        res = rmdir(path);
     }
-}
+    closedir(dir);
 
+    if (rmdir(path) != 0) {
+        fprintf(stderr, "Failed to remove directory: %s\n", path);
+        return -1; 
+    }
+
+    return 0; 
+}
