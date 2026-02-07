@@ -27,7 +27,7 @@ OBJ_FILES := $(patsubst $(SRC_DIR)/%.c,$(BUILD_DIR)/%.o,$(SRC_FILES))
 
 CC := gcc
 CFLAGS := -g -I$(INCLUDE_DIR) -I$(VENDOR_DIR) -DBUILD_DIR=\"$(BUILD_DIR)\"
-LDFLAGS := -lraylib -lmupdf -lm
+LDFLAGS := -lraylib -lmupdf -lleptonica -ltesseract -lm
 
 .PHONY: app editor ocr clean generate
 
