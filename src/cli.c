@@ -9,6 +9,7 @@
 #include <sys_utils.h>
 #include <pdf.h>
 #include <ocr.h>
+#include <generate.h>
 
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
@@ -115,6 +116,9 @@ int32_t main(int32_t argc, char** argv) {
     for (int32_t i = 0; i < darrayLength(text_data); i++) {
         printf("%s\n", text_data[i]);
     }
+
+    wsJson* json_ai;
+    generate_ai_answer(text_data, &json_ai);
 
     darrayDestroy(text_data);
 
