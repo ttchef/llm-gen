@@ -119,6 +119,8 @@ int32_t main(int32_t argc, char** argv) {
 
     wsJson* json_ai;
     generate_ai_answer(text_data, &json_ai);
+    char* response = wsJsonGetString(json_ai, "response");
+    fprintf(stderr, "%s\n", response);
 
     darrayDestroy(text_data);
 
