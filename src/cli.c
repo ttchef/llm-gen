@@ -122,6 +122,8 @@ int32_t main(int32_t argc, char** argv) {
     char* response = wsJsonGetString(json_ai, "response");
     fprintf(stderr, "%s\n", response);
 
+    remove_dir(BUILD_DIR"/generate");
+
     darrayDestroy(text_data);
 
     darrayDestroy(prompt);
