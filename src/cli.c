@@ -87,7 +87,7 @@ int32_t main(int32_t argc, char** argv) {
             continue;
         }
         else if (strcmp(argv[i], "--font") == 0) {
-            current_mode = ARG_MODE_PDF;   
+            current_mode = ARG_MODE_FONT;   
             continue;
         }
 
@@ -125,8 +125,18 @@ int32_t main(int32_t argc, char** argv) {
     darrayDestroy(imgs);
     darrayDestroy(pdfs);
 
+    if (darrayLength(fonts) <= 0) {
+        fprintf(stderr, "You must specify at least 1 font template image via the --font flag\n");
+        darrayDestroy(text_data);
+        darrayDestroy(prompt);
+        darrayDestroy(fonts);
+        deinit_ctx(&ctx);
+        return 1;
+    }
+
     CharacterSet character_sets[darrayLength(fonts)];
     generate_glyphs(character_sets, fonts);
+    darrayDestroy(fonts);
 
     wsJson* json_ai;
     generate_ai_answer(text_data, &json_ai);
@@ -137,6 +147,7 @@ int32_t main(int32_t argc, char** argv) {
 
     darrayDestroy(text_data);
 
+    wsJsonFree(json_ai);
     darrayDestroy(prompt);
     deinit_ctx(&ctx);
 

@@ -89,6 +89,7 @@ int32_t generate_glyphs(CharacterSet *sets, char **fonts) {
         };
 
         auto_detect_image(&img, sets[i]);
+        free(font_data);
     }
 
     return 0;

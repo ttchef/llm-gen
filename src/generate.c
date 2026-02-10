@@ -89,6 +89,11 @@ int32_t generate_ai_answer(char **text, wsJson **out_json) {
         return 1;
     }
 
+    curl_slist_free_all(headers);
+    curl_easy_cleanup(curl);
+
+    curl_global_cleanup();
+
     const char* json_string_data = (const char*)chunk.data;
     *out_json = wsStringToJson(&json_string_data);
     free(chunk.data);
