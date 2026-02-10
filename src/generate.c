@@ -37,27 +37,38 @@ int32_t generate_ai_answer(char **text, wsJson **out_json) {
     char* text_string = darrayCreate(char);
     for (int32_t i = 0; i < darrayLength(text); i++) {
         for (int32_t j = 0; j < strlen(text[i]); j++) {
-            if (isprint(text[i][j])) {
+            if (isprint((uint8_t)text[i][j])) {
                 darrayPush(text_string, text[i][j]);
             }
         }
         darrayPush(text_string, ' ');
     }
+    darrayPush(text_string, '\0');
 
-    size_t buffer_size = darrayLength(text_string) + JSON_AI_INPUT_HEADER_SIZE;
-    char* buffer = malloc(buffer_size + 1);
+    int32_t needed_size = snprintf(NULL, 0,
+                                   "{"
+                                   "\"model\":\"deepseek-r1\","
+                                   "\"prompt\":\"%s\","
+                                   "\"stream\":false"
+                                   "}", text_string);
+    if (needed_size < 0) {
+        fprintf(stderr, "snprintf failed\n");
+        darrayDestroy(text_string);
+        return 1;
+    }
+
+    char* buffer = malloc((size_t)needed_size + 1);
     if (!buffer) {
         fprintf(stderr, "failed to allocate input string buffer\n");
         return 1;
     }
 
-    snprintf(buffer, buffer_size, 
+    snprintf(buffer, needed_size + 1, 
              "{"
              "\"model\":\"deepseek-r1\","
              "\"prompt\":\"%s\","
              "\"stream\":false"
              "}", text_string);
-    buffer[buffer_size] = '\0';
     fprintf(stderr, "[DEBUG] input: %s\n", buffer);
     
     curl_global_init(CURL_GLOBAL_DEFAULT);
@@ -97,6 +108,7 @@ int32_t generate_ai_answer(char **text, wsJson **out_json) {
     const char* json_string_data = (const char*)chunk.data;
     *out_json = wsStringToJson(&json_string_data);
     free(chunk.data);
+    darrayDestroy(text_string);
 
     return 0;
 }
