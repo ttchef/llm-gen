@@ -17,7 +17,7 @@ static size_t write_callback(void *contents, size_t size, size_t nmemb, void *us
     size_t realsize = size * nmemb;
     struct Memory *mem = (struct Memory *)userp;
 
-    char *ptr = realloc(mem->data, mem->size + realsize + 1);
+    uint8_t *ptr = realloc(mem->data, mem->size + realsize + 1);
     if (!ptr) return 0;
 
     mem->data = ptr;

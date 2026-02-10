@@ -22,6 +22,7 @@ enum {
     ARG_MODE_PROMPT,
     ARG_MODE_IMG,
     ARG_MODE_PDF,
+    ARG_MODE_FONT,
 };
 
 void get_texts(Context* ctx, char*** text_data, fz_pixmap** pdf_data, char** img_data, char** prompt_data) {
@@ -64,13 +65,15 @@ int32_t main(int32_t argc, char** argv) {
         fprintf(stderr, "Help:\n"
             "\t--img:\t\tevery following argument will be interprated as a image path\n"
             "\t\t\tif a following argument is a flag it will switch\n"
-            "\t--pdf:\t\tsame as --imgs but with pdf paths\n");
+            "\t--pdf:\t\tsame as --imgs but with pdf paths\n"
+            "\t--font:\t\timages with your font in the specified format");
         return 0;
     }
     
     char** prompt = darrayCreate(char*);
     char** imgs = darrayCreate(char*);
     char** pdfs = darrayCreate(char*);
+    char** fonts = darrayCreate(char*);
 
     int32_t current_mode = ARG_MODE_PROMPT;
     for (int32_t i = 1; i < argc; i++) {
@@ -79,6 +82,10 @@ int32_t main(int32_t argc, char** argv) {
             continue;
         }
         else if (strcmp(argv[i], "--pdf") == 0) {
+            current_mode = ARG_MODE_PDF;   
+            continue;
+        }
+        else if (strcmp(argv[i], "--font") == 0) {
             current_mode = ARG_MODE_PDF;   
             continue;
         }
@@ -92,6 +99,9 @@ int32_t main(int32_t argc, char** argv) {
                 break;
             case ARG_MODE_PDF:
                 darrayPush(pdfs, argv[i]);
+                break;
+            case ARG_MODE_FONT:
+                darrayPush(fonts, argv[i]);
                 break;
         };
     }
