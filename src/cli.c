@@ -10,6 +10,7 @@
 #include <pdf.h>
 #include <ocr.h>
 #include <generate.h>
+#include <glyph.h>
 
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
@@ -66,7 +67,7 @@ int32_t main(int32_t argc, char** argv) {
             "\t--img:\t\tevery following argument will be interprated as a image path\n"
             "\t\t\tif a following argument is a flag it will switch\n"
             "\t--pdf:\t\tsame as --imgs but with pdf paths\n"
-            "\t--font:\t\timages with your font in the specified format");
+            "\t--font:\t\timages with your font in the specified format\n");
         return 0;
     }
     
@@ -111,6 +112,7 @@ int32_t main(int32_t argc, char** argv) {
     Context ctx = {0};
     init_ctx(&ctx);
 
+    /* Image Generation */
     fz_pixmap** pdf_data = darrayCreate(fz_pixmap*);
     for (int32_t i = 0; i < darrayLength(pdfs); i++) {
         convert_pdf_to_img(&ctx, pdfs[i], &pdf_data);
@@ -123,9 +125,8 @@ int32_t main(int32_t argc, char** argv) {
     darrayDestroy(imgs);
     darrayDestroy(pdfs);
 
-    for (int32_t i = 0; i < darrayLength(text_data); i++) {
-        printf("%s\n", text_data[i]);
-    }
+    CharacterSet character_sets[darrayLength(fonts)];
+    generate_glyphs(character_sets, fonts);
 
     wsJson* json_ai;
     generate_ai_answer(text_data, &json_ai);
