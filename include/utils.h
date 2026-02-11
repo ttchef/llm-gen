@@ -4,6 +4,9 @@
 
 #include <stdint.h>
 
+#define MIN(a, b) (((a) < (b)) ? (a) : (b))
+#define MAX(a, b) (((a) > (b)) ? (a) : (b))
+
 typedef struct PageDimensions {
     int32_t width;
     int32_t height;

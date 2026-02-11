@@ -1,21 +1,19 @@
 
 #include <glyph.h>
 #include <glyph_utils.h>
+#include <utils.h> 
 #include <containers/darray.h>
 
 #include <stb_image.h>
 
-static const float CHAR_SIZE = 58.601f;
-static const uint32_t CHAR_OFFSET_X = 58;
-static const uint32_t CHAR_OFFSET_Y = 58;
+const float CHAR_SIZE = 58.601f;
+const uint32_t CHAR_OFFSET_X = 58;
+const uint32_t CHAR_OFFSET_Y = 58;
 
-static const uint32_t SYM_PER_LINE = 26;
-static const uint32_t SYM_TOTAL = 26;
+const uint32_t SYM_PER_LINE = 26;
+const uint32_t SYM_TOTAL = 26;
 
-static const uint8_t DETECTION_THRESHOLD = 120;
-
-#define MIN(a, b) (((a) < (b)) ? (a) : (b))
-#define MAX(a, b) (((a) > (b)) ? (a) : (b))
+const uint8_t DETECTION_THRESHOLD = 120;
 
 typedef struct ImageData {
     int32_t width;
