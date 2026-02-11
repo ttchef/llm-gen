@@ -108,6 +108,7 @@ int32_t generate_ai_answer(char **text, wsJson **out_json) {
     const char* json_string_data = (const char*)chunk.data;
     *out_json = wsStringToJson(&json_string_data);
     free(chunk.data);
+    free(buffer);
     darrayDestroy(text_string);
 
     return 0;
