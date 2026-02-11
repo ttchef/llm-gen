@@ -15,17 +15,17 @@ const uint32_t SYM_TOTAL = 26;
 
 const uint8_t DETECTION_THRESHOLD = 120;
 
+typedef struct Vec2i {
+    int32_t x;
+    int32_t y;
+} Vec2i; 
+
 typedef struct ImageData {
     int32_t width;
     int32_t height;
     int32_t channels;
     uint8_t* data;
 } ImageData;
-
-typedef struct Vec2i {
-    int32_t x;
-    int32_t y;
-} Vec2i; 
 
 static void detect_glyph_data(ImageData* img, Vec2i src_offset, Glyph* glyph) {
     int32_t min_x = INT32_MAX;

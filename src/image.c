@@ -1,9 +1,13 @@
 
+#include "utils.h"
 #include <image.h>
 #include <glyph.h>
 #include <glyph_utils.h>
 
 #include <stdlib.h>
+#include <string.h>
+#include <stdio.h>
+#include <math.h>
 
 static void skip_unicode(char* out, size_t* size, const char* input) {
     size_t i = 0;
@@ -112,7 +116,27 @@ static CharacterSet get_max_char_set(CharacterSet* sets, size_t sets_count) {
     return res;
 }
 
-uint8_t* generate_font_image(Page page, char* text, CharacterSet* sets, size_t sets_count) {
+static void draw_background(Images* images, int32_t current_image, enum PageBackgroundType bg_type) {
+    // Horizontal
+    for (int32_t y = 0; y < images->height; y += CHAR_SIZE) {
+        for (int32_t x = 0; x < images->width; x++) {
+            for (int32_t c = 0; c < images->channels; c++) {
+                images->images_data[current_image][(y * images->width + x) * images->channels + c] = 211;
+            }
+        }
+    }
+
+    if (bg_type != PAGE_BG_TYPE_SQUARES) return;
+    for (int32_t y = 0; y < images->height; y++) {
+        for (int32_t x = 0; x < images->width; x += CHAR_SIZE) {
+            for (int32_t c = 0; c < images->channels; c++) {
+                images->images_data[current_image][(y * images->width + x) * images->channels + c] = 211;
+            }
+        }
+    }
+}
+
+Images generate_font_image(Page page, char* text, CharacterSet* sets, size_t sets_count) {
     size_t asci_text_len;
     skip_unicode(NULL, &asci_text_len, text);
     uint8_t asci_text[asci_text_len];
@@ -120,7 +144,38 @@ uint8_t* generate_font_image(Page page, char* text, CharacterSet* sets, size_t s
 
     CharacterSet max_set = get_max_char_set(sets, sets_count);
     int32_t usable_pixels_x = page.dim.width - page.padding.x * 2;
+    int32_t usable_pixels_y = page.dim.height - page.padding.y * 2;
 
     int32_t required_rows = count_rows(asci_text, asci_text_len, max_set, usable_pixels_x);
+    int32_t total_height = required_rows * CHAR_SIZE + page.padding.y * 2;
+    int32_t num_needed_pages = (int32_t)ceilf((float)page.dim.height / (float)total_height);
+
+    Images images = {
+        .width = page.dim.width,
+        .height = page.dim.height,
+        .channels = 4,
+        .images_count = num_needed_pages,
+        .images_data = malloc(sizeof(uint8_t*) * num_needed_pages),
+    };
+
+    for (int32_t i = 0; i < num_needed_pages; i++) {
+        images.images_data[i] = malloc(images.width * images.height * images.channels);
+        memset(images.images_data[i], 255, images.width * images.height * images.channels);
+        if (!images.images_data[i]) {
+            fprintf(stderr, "failed to allocate rendering image: %d\n", i);
+            return images;
+        }
+        
+        draw_background(&images, i, page.bg_type);
+    }
+
+    return images;
+}
+
+void destroy_images(Images *images) {
+    for (int32_t i = 0; i < images->images_count; i++) {
+        if (images->images_data[i]) free(images->images_data[i]);
+    }
+    if (images->images_data) free(images->images_data);
 }
 

@@ -1,4 +1,5 @@
 
+#include "utils.h"
 #include <mupdf/fitz/color.h>
 #include <stdio.h>
 #include <stdint.h>
@@ -11,9 +12,13 @@
 #include <ocr.h>
 #include <generate.h>
 #include <glyph.h>
+#include <image.h>
 
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
+
+#define STB_IMAGE_WRITE_IMPLEMENTATION
+#include <stb_image_write.h>
 
 #ifndef BUILD_DIR
 #error "Need to definie BUILD_DIR as your build directory"
@@ -134,7 +139,8 @@ int32_t main(int32_t argc, char** argv) {
         return 1;
     }
 
-    CharacterSet character_sets[darrayLength(fonts)];
+    int32_t character_sets_count = darrayLength(fonts);
+    CharacterSet character_sets[character_sets_count];
     generate_glyphs(character_sets, fonts);
     darrayDestroy(fonts);
 
@@ -142,6 +148,28 @@ int32_t main(int32_t argc, char** argv) {
     generate_ai_answer(text_data, &json_ai);
     char* response = wsJsonGetString(json_ai, "response");
     fprintf(stderr, "%s\n", response);
+
+    Page page = {
+        .bg_type = PAGE_BG_TYPE_SQUARES,
+        .dim = {
+            .width = 500,
+            .height = 60,
+        },
+        .padding = {
+            .x = 10,
+            .y = 5,
+        },
+    };
+
+    Images images = generate_font_image(page, response, character_sets, character_sets_count);
+
+    for (int32_t i = 0; i < images.images_count; i++) {
+        char buffer[30];
+        snprintf(buffer, 30, "Page: %d.png", i);
+        stbi_write_png(buffer, images.width, images.height, images.channels, images.images_data[i], images.width * images.channels);
+    }
+
+    destroy_images(&images);
 
     remove_dir(BUILD_DIR"/generate");
 

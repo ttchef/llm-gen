@@ -8,3 +8,4 @@ generate
 *.json
 .cache/
 build/
+*.png
