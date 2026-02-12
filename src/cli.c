@@ -152,8 +152,8 @@ int32_t main(int32_t argc, char** argv) {
     Page page = {
         .bg_type = PAGE_BG_TYPE_SQUARES,
         .dim = {
-            .width = 60,
-            .height = 60,
+            .width = 100,
+            .height = 300,
         },
         .padding = {
             .x = 10,

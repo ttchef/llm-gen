@@ -95,6 +95,8 @@ static int32_t count_rows(const char* text, size_t len, CharacterSet max_set, in
         }
 
         int32_t pixels_char = max_set.font_widths[(uint8_t)text[i]].width;
+        printf("Pixel Width: %d\n", pixels_char);
+        printf("Char: %c\n", text[i]);
 
         if (current_x + pixels_char >= pixels_horizontal) {
             rows++;
@@ -110,7 +112,8 @@ static int32_t count_rows(const char* text, size_t len, CharacterSet max_set, in
 
 /* Returns character set with the hightest width */
 static CharacterSet get_max_char_set(CharacterSet* sets, size_t sets_count) {
-    CharacterSet res = {0};
+    CharacterSet res;
+    memset(&res, 0, sizeof(CharacterSet));
 
     for (int32_t i = 0; i < (int32_t)sets_count; i++) {
         for (int32_t j = 0; j < SYM_TOTAL; j++) {
@@ -171,10 +174,6 @@ static void draw_char(uint8_t c, DrawContext* ctx, CharacterSet* set, Page* page
             uint32_t dst_y = ctx->current_y + y;
             uint32_t dst_index = (dst_y * page->dim.width + dst_x) * ctx->channels;
 
-            printf("Character: %c\n", c);
-            printf("Char Width: %u\n", char_width);
-            printf("Char Offset X: %d\n", char_offset_x);
-            printf("Char Offset Y: %d\n", char_offset_y);
             uint32_t src_x = tile_offset_x + (CHAR_SIZE * 0.5f) - (char_width * 0.5f) + char_offset_x + x;
             uint32_t src_y = tile_offset_y + y;
 
@@ -191,7 +190,6 @@ static void draw_char(uint8_t c, DrawContext* ctx, CharacterSet* set, Page* page
 
             uint8_t* pixel = &set->image_data[src_index];
 
-            printf("SRC_INDEX: %u\n\n\n", src_index);
             uint8_t luminance = pixel_luminance(pixel, set->image_channels);
 
             if (luminance < 120) {
@@ -211,13 +209,18 @@ Images generate_font_image(Page page, char* text, CharacterSet* sets, size_t set
     uint8_t asci_text[asci_text_len];
     skip_unicode(asci_text, &asci_text_len, text);
 
-    CharacterSet max_set = get_max_char_set(sets, sets_count);
+    printf("\n\n\nAsci String: %s", asci_text);
+
+    CharacterSet max_set = sets[0]; // get_max_char_set(sets, sets_count);
     int32_t usable_pixels_x = page.dim.width - page.padding.x * 2;
     int32_t usable_pixels_y = page.dim.height - page.padding.y * 2;
 
     int32_t required_rows = count_rows(asci_text, asci_text_len, max_set, usable_pixels_x);
     int32_t total_height = required_rows * CHAR_SIZE + page.padding.y * 2;
     int32_t num_needed_pages = (int32_t)ceilf((float)total_height / (float)page.dim.height);
+    printf("Required Rows: %d\n", required_rows);
+    printf("Total Height: %d\n", total_height);
+    printf("Num Pages: %d\n", num_needed_pages);
 
     Images images = {
         .width = page.dim.width,
