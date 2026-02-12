@@ -6,6 +6,8 @@
 
 #include <stb_image.h>
 
+#include <string.h>
+
 const float CHAR_SIZE = 58.601f;
 const uint32_t CHAR_OFFSET_X = 58;
 const uint32_t CHAR_OFFSET_Y = 58;
@@ -27,7 +29,7 @@ typedef struct ImageData {
     uint8_t* data;
 } ImageData;
 
-static void detect_glyph_data(ImageData* img, Vec2i src_offset, Glyph* glyph) {
+static void detect_glyph_data(ImageData* img, Vec2i src_offset, Glyph* glyph, uint8_t c) {
     int32_t min_x = INT32_MAX;
     int32_t max_x = -1;
 
@@ -56,18 +58,25 @@ static void detect_glyph_data(ImageData* img, Vec2i src_offset, Glyph* glyph) {
         glyph->width = (max_x - min_x) + 1;
         float glyph_center_x = min_x + glyph->width * 0.5f;
         glyph->offset_x = glyph_center_x - (cell_px * 0.5f);
+        glyph->offset_y = 0;
     }
 
     glyph->width += 1; // TODO: Remove Constant PADDING
 }
 
-static void auto_detect_image(ImageData* img, CharacterSet set) {
+static void auto_detect_image(ImageData* img, CharacterSet* set) {
+    memset(set, 0, sizeof(CharacterSet));
     for (int32_t i = 0; i < SYM_TOTAL; i++) {
         Vec2i focused_char = {0};
         focused_char.x = (i % SYM_PER_LINE) * CHAR_SIZE + CHAR_OFFSET_X;
         focused_char.y = (i / SYM_PER_LINE) * CHAR_SIZE + CHAR_OFFSET_Y;
-        detect_glyph_data(img, focused_char, &set.font_widths[tile_index_to_char(i)]);
+        uint8_t c = tile_index_to_char(i);
+        detect_glyph_data(img, focused_char, &set->font_widths[c], c);
     }
+    set->image_width = img->width;
+    set->image_height = img->height;
+    set->image_channels = img->channels;
+    set->image_data = img->data;
 }
 
 int32_t generate_glyphs(CharacterSet *sets, char **fonts) {
@@ -86,10 +95,15 @@ int32_t generate_glyphs(CharacterSet *sets, char **fonts) {
             .data = font_data,
         };
 
-        auto_detect_image(&img, sets[i]);
-        free(font_data);
+        auto_detect_image(&img, &sets[i]);
     }
 
     return 0;
+}
+
+void destroy_character_sets(CharacterSet *sets, int32_t sets_count) {
+    for (int32_t i = 0; i < sets_count; i++) {
+        free(sets[i].image_data);
+    }
 }
 

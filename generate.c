@@ -135,7 +135,7 @@ static void add_tile(struct TileInfo* info) {
 
             if (luminance < 120) {
                 for (int32_t c = 0; c < info->channels; c++) {
-                        info->output[dst_offset + c] = luminance;
+                    info->output[dst_offset + c] = luminance;
                 }
             }
         }

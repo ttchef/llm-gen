@@ -174,9 +174,9 @@ int32_t main(int32_t argc, char** argv) {
     remove_dir(BUILD_DIR"/generate");
 
     darrayDestroy(text_data);
-
-    wsJsonFree(json_ai);
     darrayDestroy(prompt);
+    destroy_character_sets(character_sets, character_sets_count);
+    wsJsonFree(json_ai);
     deinit_ctx(&ctx);
 
     return 0;

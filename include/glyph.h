@@ -21,8 +21,13 @@ typedef struct Glyph {
 
 typedef struct CharacterSet {
     Glyph font_widths[256];
+    int32_t image_width;
+    int32_t image_height;
+    int32_t image_channels;
+    uint8_t* image_data;
 } CharacterSet;
 
 int32_t generate_glyphs(CharacterSet* sets, char** fonts);
+void destroy_character_sets(CharacterSet* sets, int32_t sets_count);
 
 #endif // GLYPH_H
