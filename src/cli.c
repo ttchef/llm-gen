@@ -152,7 +152,7 @@ int32_t main(int32_t argc, char** argv) {
     Page page = {
         .bg_type = PAGE_BG_TYPE_SQUARES,
         .dim = {
-            .width = 500,
+            .width = 60,
             .height = 60,
         },
         .padding = {
@@ -165,7 +165,7 @@ int32_t main(int32_t argc, char** argv) {
 
     for (int32_t i = 0; i < images.images_count; i++) {
         char buffer[30];
-        snprintf(buffer, 30, "Page: %d.png", i);
+        snprintf(buffer, 30, "Page_%d.png", i);
         stbi_write_png(buffer, images.width, images.height, images.channels, images.images_data[i], images.width * images.channels);
     }
 

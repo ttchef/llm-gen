@@ -148,7 +148,7 @@ Images generate_font_image(Page page, char* text, CharacterSet* sets, size_t set
 
     int32_t required_rows = count_rows(asci_text, asci_text_len, max_set, usable_pixels_x);
     int32_t total_height = required_rows * CHAR_SIZE + page.padding.y * 2;
-    int32_t num_needed_pages = (int32_t)ceilf((float)page.dim.height / (float)total_height);
+    int32_t num_needed_pages = (int32_t)ceilf((float)total_height / (float)page.dim.height);
 
     Images images = {
         .width = page.dim.width,
