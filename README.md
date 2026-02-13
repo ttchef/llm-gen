@@ -23,3 +23,4 @@ Only linux
  - raygui 
  - stb_image
  - stb_image_write
+ - clay
