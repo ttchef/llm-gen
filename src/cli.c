@@ -30,7 +30,7 @@ enum {
     ARG_MODE_PDF,
 };
 
-static const bool solve_ai = false;
+static const bool solve_ai = true;
 
 void get_texts(Context* ctx, char*** text_data, fz_pixmap** pdf_data, char** img_data, char** prompt_data) {
     for (int32_t i = 0; i < darrayLength(pdf_data); i++) {
