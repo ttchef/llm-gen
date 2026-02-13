@@ -28,7 +28,6 @@ enum {
     ARG_MODE_PROMPT,
     ARG_MODE_IMG,
     ARG_MODE_PDF,
-    ARG_MODE_FONT,
 };
 
 static const bool solve_ai = false;
@@ -84,7 +83,7 @@ int32_t main(int32_t argc, char** argv) {
     char** prompt = darrayCreate(char*);
     char** imgs = darrayCreate(char*);
     char** pdfs = darrayCreate(char*);
-    char** fonts = darrayCreate(char*);
+    char* font_dir = NULL;
 
     int32_t current_mode = ARG_MODE_PROMPT;
     for (int32_t i = 1; i < argc; i++) {
@@ -97,7 +96,15 @@ int32_t main(int32_t argc, char** argv) {
             continue;
         }
         else if (strcmp(argv[i], "--font") == 0) {
-            current_mode = ARG_MODE_FONT;   
+            if (i + 1 < argc) {
+                font_dir = argv[i + 1];
+                i++;
+                continue;
+            }
+            else {
+                fprintf(stderr, "ERROR: --font flag specified but no template directory named\n");
+                exit(1);
+            }
             continue;
         }
 
@@ -110,9 +117,6 @@ int32_t main(int32_t argc, char** argv) {
                 break;
             case ARG_MODE_PDF:
                 darrayPush(pdfs, argv[i]);
-                break;
-            case ARG_MODE_FONT:
-                darrayPush(fonts, argv[i]);
                 break;
         };
     }
@@ -135,13 +139,10 @@ int32_t main(int32_t argc, char** argv) {
     darrayDestroy(imgs);
     darrayDestroy(pdfs);
 
-    if (darrayLength(fonts) <= 0) {
-        fprintf(stderr, "You must specify at least 1 font template image via the --font flag\n");
-        darrayDestroy(text_data);
-        darrayDestroy(prompt);
-        darrayDestroy(fonts);
-        deinit_ctx(&ctx);
-        return 1;
+    char** fonts = darrayCreate(char*);
+    if (read_files_in_dir(font_dir, &fonts) || darrayLength(fonts) <= 0) {
+        fprintf(stderr, "Failed getting font templates\n");
+        exit(1);
     }
 
     int32_t character_sets_count = darrayLength(fonts);
