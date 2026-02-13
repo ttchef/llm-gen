@@ -13,7 +13,7 @@ const uint32_t CHAR_OFFSET_X = 58;
 const uint32_t CHAR_OFFSET_Y = 58;
 
 const uint32_t SYM_PER_LINE = 26;
-const uint32_t SYM_TOTAL = 26;
+const uint32_t SYM_TOTAL = 100;
 
 const uint8_t DETECTION_THRESHOLD = 120;
 

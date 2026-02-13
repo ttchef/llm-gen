@@ -211,15 +211,13 @@ Images generate_font_image(Page page, char* text, CharacterSet* sets, size_t set
 
     printf("\n\n\nAsci String: %s", asci_text);
 
-    CharacterSet max_set = sets[0]; // get_max_char_set(sets, sets_count);
+    CharacterSet max_set = get_max_char_set(sets, sets_count); // get_max_char_set(sets, sets_count);
     int32_t usable_pixels_x = page.dim.width - page.padding.x * 2;
     int32_t usable_pixels_y = page.dim.height - page.padding.y * 2;
 
     int32_t required_rows = count_rows(asci_text, asci_text_len, max_set, usable_pixels_x);
     int32_t total_height = required_rows * CHAR_SIZE + page.padding.y * 2;
     int32_t num_needed_pages = (int32_t)ceilf((float)total_height / (float)page.dim.height);
-    printf("Required Rows: %d\n", required_rows);
-    printf("Total Height: %d\n", total_height);
     printf("Num Pages: %d\n", num_needed_pages);
 
     Images images = {
