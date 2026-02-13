@@ -95,8 +95,6 @@ static int32_t count_rows(const char* text, size_t len, CharacterSet max_set, in
         }
 
         int32_t pixels_char = max_set.font_widths[(uint8_t)text[i]].width;
-        printf("Pixel Width: %d\n", pixels_char);
-        printf("Char: %c\n", text[i]);
 
         if (current_x + pixels_char >= pixels_horizontal) {
             rows++;
@@ -252,6 +250,23 @@ Images generate_font_image(Page page, char* text, CharacterSet* sets, size_t set
         int32_t j = 0;
         for (; j < chars_per_page; j++) {
             if (text_index + j >= asci_text_len) break;
+            if (asci_text[text_index + j] == '\n' ||
+                (asci_text[text_index + j] == '\\' && asci_text[text_index + j + 1] == 'n')) {
+                if (asci_text[text_index + j] == '\\') j++;
+                ctx.current_x = 0;
+                ctx.current_y += CHAR_SIZE;
+                continue;
+            }
+            else if (asci_text[text_index + j] == '\\') {
+                continue;
+            }
+            else if (asci_text[text_index + j] == '*') {
+                continue;
+            }
+            else if (asci_text[text_index + j] == '#') {
+                continue;
+            }
+
             draw_char(asci_text[text_index + j], &ctx, &sets[0], &page, images.images_data[i]);
         }
         text_index += j; // TODO: maybe + 1

@@ -31,6 +31,8 @@ enum {
     ARG_MODE_FONT,
 };
 
+static const bool solve_ai = false;
+
 void get_texts(Context* ctx, char*** text_data, fz_pixmap** pdf_data, char** img_data, char** prompt_data) {
     for (int32_t i = 0; i < darrayLength(pdf_data); i++) {
         Image img = {
@@ -57,6 +59,7 @@ void get_texts(Context* ctx, char*** text_data, fz_pixmap** pdf_data, char** img
         char* string = string_from_img(ctx, &img);
         if (!string) continue;
         darrayPush(*text_data, string);
+        free(img.data.stbi.data);
     }
 
     for (int32_t i = 0; i < darrayLength(prompt_data); i++) {
@@ -145,15 +148,21 @@ int32_t main(int32_t argc, char** argv) {
     darrayDestroy(fonts);
 
     wsJson* json_ai;
-    generate_ai_answer(text_data, &json_ai);
+    if (solve_ai) {
+        generate_ai_answer(text_data, &json_ai);
+    }
+    else {
+        json_ai = wsJsonInitObject(NULL);
+        wsJsonAddString(json_ai, "response", "To find the derivative of \\(2x^2 + 4x\\), apply the power rule to each term.\n\nFor the term \\(2x^2\\):  \n- Coefficient \\(a = 2\\), exponent \\(n = 2\\)  \n- Derivative: \\(2 \\cdot 2 \\cdot x^{2-1} = 4x\\)\n\nFor the term \\(4x\\):  \n- Coefficient \\(a = 4\\), exponent \\(n = 1\\)  \n- Derivative: \\(4 \\cdot 1 \\cdot x^{1-1} = 4 \\cdot 1 \\cdot 1 = 4\\)\n\nCombine the results:  \n\\(\\frac{d}{dx}(2x^2 + 4x) = 4x + 4\\)\n\n\\boxed{4x+4}");
+    }
     char* response = wsJsonGetString(json_ai, "response");
     fprintf(stderr, "%s\n", response);
 
     Page page = {
-        .bg_type = PAGE_BG_TYPE_SQUARES,
+        .bg_type = PAGE_BG_TYPE_LINES,
         .dim = {
-            .width = 500,
-            .height = 1500,
+            .width = 1500,
+            .height = 2150,
         },
         .padding = {
             .x = 10,
