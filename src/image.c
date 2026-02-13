@@ -267,7 +267,8 @@ Images generate_font_image(Page page, char* text, CharacterSet* sets, size_t set
                 continue;
             }
 
-            draw_char(asci_text[text_index + j], &ctx, &sets[0], &page, images.images_data[i]);
+            int32_t selected_set = rand() % sets_count;
+            draw_char(asci_text[text_index + j], &ctx, &sets[selected_set], &page, images.images_data[i]);
         }
         text_index += j; // TODO: maybe + 1
     }

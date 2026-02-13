@@ -69,6 +69,8 @@ void get_texts(Context* ctx, char*** text_data, fz_pixmap** pdf_data, char** img
 } 
 
 int32_t main(int32_t argc, char** argv) {
+    srand(time(NULL));
+
     if (argc < 2) {
         fprintf(stderr, "USAGE: <prompt>\n");
         fprintf(stderr, "Help:\n"
