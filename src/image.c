@@ -185,7 +185,6 @@ static void draw_char(uint8_t c, DrawContext* ctx, CharacterSet* set, Page* page
             }
 
             uint32_t src_index = (src_y * set->image_width + src_x) * set->image_channels;
-
             uint8_t* pixel = &set->image_data[src_index];
 
             uint8_t luminance = pixel_luminance(pixel, set->image_channels);
@@ -253,7 +252,7 @@ Images generate_font_image(Page page, char* text, CharacterSet* sets, size_t set
             if (asci_text[text_index + j] == '\n' ||
                 (asci_text[text_index + j] == '\\' && asci_text[text_index + j + 1] == 'n')) {
                 if (asci_text[text_index + j] == '\\') j++;
-                ctx.current_x = 0;
+                ctx.current_x = page.padding.x;
                 ctx.current_y += CHAR_SIZE;
                 continue;
             }

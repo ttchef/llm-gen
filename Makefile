@@ -36,6 +36,7 @@ all: folders app generate editor
 folders:
 	mkdir -p $(BUILD_DIR)
 	mkdir -p $(BUILD_DIR)/containers
+	mkdir -p $(BUILD_DIR)/clay-renderers
 
 app: $(OBJ_FILES)
 	$(CC) $(CFLAGS) $^ -o $(EXE_NAME) $(LDFLAGS)

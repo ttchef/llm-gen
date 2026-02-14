@@ -1,6 +1,4 @@
 
-#include "utils.h"
-#include <mupdf/fitz/color.h>
 #include <stdio.h>
 #include <stdint.h>
 #include <string.h>
@@ -13,6 +11,7 @@
 #include <generate.h>
 #include <glyph.h>
 #include <image.h>
+#include <editor.h>
 
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
@@ -30,7 +29,7 @@ enum {
     ARG_MODE_PDF,
 };
 
-static const bool solve_ai = true;
+static const bool solve_ai = false;
 
 void get_texts(Context* ctx, char*** text_data, fz_pixmap** pdf_data, char** img_data, char** prompt_data) {
     for (int32_t i = 0; i < darrayLength(pdf_data); i++) {
@@ -139,9 +138,16 @@ int32_t main(int32_t argc, char** argv) {
     darrayDestroy(imgs);
     darrayDestroy(pdfs);
 
+    if (!font_dir) {
+        fprintf(stderr, "Must specify 1 font template directory\n");
+        deinit_ctx(&ctx);
+        exit(1);
+    }
+
     char** fonts = darrayCreate(char*);
     if (read_files_in_dir(font_dir, &fonts) || darrayLength(fonts) <= 0) {
         fprintf(stderr, "Failed getting font templates\n");
+        deinit_ctx(&ctx);
         exit(1);
     }
 
@@ -149,6 +155,8 @@ int32_t main(int32_t argc, char** argv) {
     CharacterSet character_sets[character_sets_count];
     generate_glyphs(character_sets, fonts);
     darrayDestroy(fonts);
+
+    run_editor();
 
     wsJson* json_ai;
     if (solve_ai) {
@@ -168,8 +176,8 @@ int32_t main(int32_t argc, char** argv) {
             .height = 2150,
         },
         .padding = {
-            .x = 10,
-            .y = 5,
+            .x = 0,
+            .y = 0,
         },
     };
 
