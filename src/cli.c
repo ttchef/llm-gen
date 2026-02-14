@@ -11,7 +11,6 @@
 #include <generate.h>
 #include <glyph.h>
 #include <image.h>
-#include <editor.h>
 
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
@@ -97,20 +96,8 @@ int32_t main(int32_t argc, char** argv) {
 
     char** text_data = NULL;
 
-    if (darrayLength(pdfs) == 0 && 
-        darrayLength(imgs) == 0 && 
-        darrayLength(prompt) == 0) {
-
-        text_data = darrayCreate(char*);
-
-        char* buffer = malloc(MAX_STDIN_READ_SIZE);
-        fgets(buffer, MAX_STDIN_READ_SIZE, stdin);
-
-    }
-    else {
-        text_data = darrayCreate(char*);
-        get_texts(&ctx, &text_data, pdfs, imgs, prompt);
-    }
+    text_data = darrayCreate(char*);
+    get_texts(&ctx, &text_data, pdfs, imgs, prompt);
 
     /* Cleanup */
     darrayDestroy(imgs);
@@ -120,8 +107,6 @@ int32_t main(int32_t argc, char** argv) {
         return 1;
     }
 
-    //run_editor();
-    
     char* response = NULL;
     if (solve_ai) {
         generate_ai_answer(&ctx, text_data, &response);
