@@ -3,6 +3,8 @@
 #include <glyph_utils.h>
 #include <utils.h> 
 #include <containers/darray.h>
+#include <context.h>
+#include <sys_utils.h>
 
 #include <stb_image.h>
 
@@ -65,7 +67,6 @@ static void detect_glyph_data(ImageData* img, Vec2i src_offset, Glyph* glyph, ui
 }
 
 static void auto_detect_image(ImageData* img, CharacterSet* set) {
-    memset(set, 0, sizeof(CharacterSet));
     for (int32_t i = 0; i < SYM_TOTAL; i++) {
         Vec2i focused_char = {0};
         focused_char.x = (i % SYM_PER_LINE) * CHAR_SIZE + CHAR_OFFSET_X;
@@ -101,9 +102,25 @@ int32_t generate_glyphs(CharacterSet *sets, char **fonts) {
     return 0;
 }
 
+int32_t get_character_sets(struct Context *ctx, const char* font_dir) {
+    char** fonts = darrayCreate(char*);
+    if (read_files_in_dir(font_dir, &fonts) || darrayLength(fonts) <= 0) {
+        fprintf(stderr, "Failed getting font templates\n");
+        return 1;
+    }
+
+    ctx->sets_count = darrayLength(fonts);
+    ctx->sets = calloc(ctx->sets_count, sizeof(CharacterSet));
+    generate_glyphs(ctx->sets, fonts);
+    darrayDestroy(fonts);
+
+    return 0;
+}
+
 void destroy_character_sets(CharacterSet *sets, int32_t sets_count) {
     for (int32_t i = 0; i < sets_count; i++) {
         free(sets[i].image_data);
     }
+    free(sets);
 }
 

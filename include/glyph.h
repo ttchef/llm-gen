@@ -27,7 +27,8 @@ typedef struct CharacterSet {
     uint8_t* image_data;
 } CharacterSet;
 
-int32_t generate_glyphs(CharacterSet* sets, char** fonts);
+struct Context;
+int32_t get_character_sets(struct Context* ctx, const char* font_dir);
 void destroy_character_sets(CharacterSet* sets, int32_t sets_count);
 
 #endif // GLYPH_H

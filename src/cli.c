@@ -23,6 +23,8 @@
 #error "Need to definie BUILD_DIR as your build directory"
 #endif
 
+#define MAX_STDIN_READ_SIZE 10000 /* Chars */
+
 enum {
     ARG_MODE_PROMPT,
     ARG_MODE_IMG,
@@ -31,59 +33,7 @@ enum {
 
 static const bool solve_ai = false;
 
-void get_texts(Context* ctx, char*** text_data, fz_pixmap** pdf_data, char** img_data, char** prompt_data) {
-    for (int32_t i = 0; i < darrayLength(pdf_data); i++) {
-        Image img = {
-            .type = IMAGE_TYPE_PPM,
-            .data.pix = pdf_data[i],
-        };
-        char* string = string_from_img(ctx, &img);
-        if (!string) continue;
-        darrayPush(*text_data, string);
-    }
-
-    for (int32_t i = 0; i < darrayLength(img_data); i++) {
-        Image img = {
-            .type = IMAGE_TYPE_STBI,
-        };
-
-        int32_t channels;
-        img.data.stbi.data = stbi_load(img_data[i], &img.data.stbi.width, &img.data.stbi.height, &channels, BPP);
-        if (!img.data.stbi.data) {
-            fprintf(stderr, "Failed to load image: %s\n", img_data[i]);
-            continue;
-        }
-
-        char* string = string_from_img(ctx, &img);
-        if (!string) continue;
-        darrayPush(*text_data, string);
-        free(img.data.stbi.data);
-    }
-
-    for (int32_t i = 0; i < darrayLength(prompt_data); i++) {
-        char* string = prompt_data[i];
-        darrayPush(*text_data, string);
-    }
-} 
-
-int32_t main(int32_t argc, char** argv) {
-    srand(time(NULL));
-
-    if (argc < 2) {
-        fprintf(stderr, "USAGE: <prompt>\n");
-        fprintf(stderr, "Help:\n"
-            "\t--img:\t\tevery following argument will be interprated as a image path\n"
-            "\t\t\tif a following argument is a flag it will switch\n"
-            "\t--pdf:\t\tsame as --imgs but with pdf paths\n"
-            "\t--font:\t\timages with your font in the specified format\n");
-        return 0;
-    }
-    
-    char** prompt = darrayCreate(char*);
-    char** imgs = darrayCreate(char*);
-    char** pdfs = darrayCreate(char*);
-    char* font_dir = NULL;
-
+void parse_args(int32_t argc, char** argv, char*** prompt, char*** imgs, char*** pdfs, char** font_dir) {
     int32_t current_mode = ARG_MODE_PROMPT;
     for (int32_t i = 1; i < argc; i++) {
         if (strcmp(argv[i], "--img") == 0) {
@@ -96,7 +46,7 @@ int32_t main(int32_t argc, char** argv) {
         }
         else if (strcmp(argv[i], "--font") == 0) {
             if (i + 1 < argc) {
-                font_dir = argv[i + 1];
+                *font_dir = argv[i + 1];
                 i++;
                 continue;
             }
@@ -109,31 +59,67 @@ int32_t main(int32_t argc, char** argv) {
 
         switch (current_mode) {
             case ARG_MODE_PROMPT:
-                darrayPush(prompt, argv[i]);
+                darrayPush(*prompt, argv[i]);
                 break;
             case ARG_MODE_IMG:
-                darrayPush(imgs, argv[i]);
+                darrayPush(*imgs, argv[i]);
                 break;
             case ARG_MODE_PDF:
-                darrayPush(pdfs, argv[i]);
+                darrayPush(*pdfs, argv[i]);
                 break;
         };
     }
 
-    create_dir_if_not_exists(BUILD_DIR"/generate");
+}
+
+int32_t main(int32_t argc, char** argv) {
+    srand(time(NULL));
+
+    if (argc < 2) {
+        fprintf(stderr, "USAGE: <prompt>\n");
+        fprintf(stderr, "If no arguments are passed execpt a font directory it will read input throught stdin\n");
+        fprintf(stderr, "Help:\n"
+                "\t--img:\t\tevery following argument will be interprated as a image path\n"
+                "\t\t\tif a following argument is a flag it will switch\n"
+                "\t--pdf:\t\tsame as --imgs but with pdf paths\n"
+                "\t--font:\t\tdirectory with images of the font template\n");
+        return 0;
+    }
+    
+    char** prompt = darrayCreate(char*);
+    char** imgs = darrayCreate(char*);
+    char** pdfs = darrayCreate(char*);
+    char* font_dir = NULL;
+
+    parse_args(argc, argv, &prompt, &imgs, &pdfs, &font_dir);
 
     Context ctx = {0};
     init_ctx(&ctx);
 
     /* Image Generation */
     fz_pixmap** pdf_data = darrayCreate(fz_pixmap*);
-    for (int32_t i = 0; i < darrayLength(pdfs); i++) {
-        convert_pdf_to_img(&ctx, pdfs[i], &pdf_data);
+    char** text_data = NULL;
+
+    if (darrayLength(pdfs) == 0 && 
+        darrayLength(imgs) == 0 && 
+        darrayLength(prompt) == 0) {
+
+        text_data = darrayCreate(char*);
+
+        char* buffer = malloc(MAX_STDIN_READ_SIZE);
+        fgets(buffer, MAX_STDIN_READ_SIZE, stdin);
+
     }
+    else {
+        for (int32_t i = 0; i < darrayLength(pdfs); i++) {
+            convert_pdf_to_img(&ctx, pdfs[i], &pdf_data);
+        }
 
-    char** text_data = darrayCreate(char*);
-    get_texts(&ctx, &text_data, pdf_data, imgs, prompt);
-
+        text_data = darrayCreate(char*);
+        get_texts(&ctx, &text_data, pdf_data, imgs, prompt);
+    }
+    
+    /* Cleanup */
     darrayDestroy(pdf_data);
     darrayDestroy(imgs);
     darrayDestroy(pdfs);
@@ -144,18 +130,8 @@ int32_t main(int32_t argc, char** argv) {
         exit(1);
     }
 
-    char** fonts = darrayCreate(char*);
-    if (read_files_in_dir(font_dir, &fonts) || darrayLength(fonts) <= 0) {
-        fprintf(stderr, "Failed getting font templates\n");
-        deinit_ctx(&ctx);
-        exit(1);
-    }
-
-    int32_t character_sets_count = darrayLength(fonts);
-    CharacterSet character_sets[character_sets_count];
-    generate_glyphs(character_sets, fonts);
-    darrayDestroy(fonts);
-
+    get_character_sets(&ctx, font_dir);
+    
     run_editor();
 
     wsJson* json_ai;
@@ -181,7 +157,7 @@ int32_t main(int32_t argc, char** argv) {
         },
     };
 
-    Images images = generate_font_image(page, response, character_sets, character_sets_count);
+    Images images = generate_font_image(page, response, ctx.sets, ctx.sets_count);
 
     for (int32_t i = 0; i < images.images_count; i++) {
         char buffer[30];
@@ -191,11 +167,8 @@ int32_t main(int32_t argc, char** argv) {
 
     destroy_images(&images);
 
-    remove_dir(BUILD_DIR"/generate");
-
     darrayDestroy(text_data);
     darrayDestroy(prompt);
-    destroy_character_sets(character_sets, character_sets_count);
     wsJsonFree(json_ai);
     deinit_ctx(&ctx);
 
