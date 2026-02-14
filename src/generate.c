@@ -1,10 +1,13 @@
 
 #include <generate.h>
+#include <context.h>
 #include <containers/darray.h>
 
 #include <curl/curl.h>
 
 #include <ctype.h>
+#include <stdlib.h>
+#include <string.h>
 
 #define JSON_AI_INPUT_HEADER_SIZE 128
 
@@ -28,7 +31,7 @@ static size_t write_callback(void *contents, size_t size, size_t nmemb, void *us
     return realsize;
 }
 
-int32_t generate_ai_answer(char **text, wsJson **out_json) {
+int32_t generate_ai_answer(struct Context* ctx, char **text, char** response) {
     CURL* curl;
     CURLcode res;
 
@@ -106,7 +109,9 @@ int32_t generate_ai_answer(char **text, wsJson **out_json) {
     curl_global_cleanup();
 
     const char* json_string_data = (const char*)chunk.data;
-    *out_json = wsStringToJson(&json_string_data);
+    ctx->json_answer = wsStringToJson(&json_string_data);
+    *response = wsJsonGetString(ctx->json_answer, "response");
+
     free(chunk.data);
     free(buffer);
     darrayDestroy(text_string);

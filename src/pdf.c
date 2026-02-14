@@ -1,4 +1,5 @@
 
+#include <mupdf/fitz/color.h>
 #include <mupdf/fitz/context.h>
 #include <mupdf/fitz/document.h>
 #include <mupdf/fitz/types.h>
@@ -10,9 +11,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-int32_t convert_pdf_to_img(Context* ctx, char *path, fz_pixmap*** pix_array) {
-    if (!pix_array) {
-        fprintf(stderr, "pix_array == NULL\n");
+int32_t convert_pdf_to_img(Context* ctx, char *path, fz_pixmap* piximg) {
+    if (!piximg) {
+        fprintf(stderr, "Input PPM image == NULL\n");
         return 1;
     }
 
@@ -57,7 +58,7 @@ int32_t convert_pdf_to_img(Context* ctx, char *path, fz_pixmap*** pix_array) {
             return 1;
         }
         
-        darrayPush(*pix_array, pix);
+        memcpy(piximg, pix, sizeof(fz_pixmap));
     }
 
     fz_drop_document(ctx->pdf_ctx, doc);

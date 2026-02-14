@@ -29,9 +29,9 @@ CC := gcc
 CFLAGS := -g -Wall -Wextra -pedantic -fsanitize=address -I$(INCLUDE_DIR) -I$(VENDOR_DIR) -DBUILD_DIR=\"$(BUILD_DIR)\"
 LDFLAGS := -lraylib -lmupdf -lleptonica -ltesseract -lcurl -lwsJson -lm
 
-.PHONY: app editor clean generate
+.PHONY: app clean 
 
-all: folders app generate editor
+all: folders app
 
 folders:
 	mkdir -p $(BUILD_DIR)
@@ -41,16 +41,10 @@ folders:
 app: $(OBJ_FILES)
 	$(CC) $(CFLAGS) $^ -o $(EXE_NAME) $(LDFLAGS)
 
-generate:
-	$(CC) $(CFLAGS) generate.c -o generate -lcurl -lwsJson -lm
-
-editor:
-	$(CC) $(CFLAGS) editor.c ui.c -o editor -lm -lraylib
-
 $(BUILD_DIR)/%.o: $(SRC_DIR)/%.c 
 	$(CC) $(CFLAGS) -c $< -o $@
 
 clean:
-	rm -rf main editor generate $(BUILD_DIR)
+	rm -rf main $(BUILD_DIR)
 
 

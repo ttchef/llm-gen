@@ -3,6 +3,7 @@
 #include <mupdf/fitz/context.h>
 #include <image.h>
 #include <ocr.h>
+#include <pdf.h>
 #include <containers/darray.h>
 
 #include <stb_image.h>
@@ -27,17 +28,22 @@ int32_t init_ctx(Context *ctx) {
 
 void deinit_ctx(Context *ctx) {
     destroy_character_sets(ctx->sets, ctx->sets_count);
+    wsJsonFree(ctx->json_answer);
+    destroy_images(&ctx->gen_imgs);
     fz_drop_context(ctx->pdf_ctx);
 
     TessBaseAPIEnd(ctx->ocr_ctx);
     TessBaseAPIDelete(ctx->ocr_ctx);
 }
 
-void get_texts(Context* ctx, char*** text_data, fz_pixmap** pdf_data, char** img_data, char** prompt_data) {
+void get_texts(Context* ctx, char*** text_data, char** pdf_data, char** img_data, char** prompt_data) {
     for (int32_t i = 0; i < darrayLength(pdf_data); i++) {
+        fz_pixmap pix;
+        convert_pdf_to_img(ctx, pdf_data[i], &pix);
+
         Image img = {
             .type = IMAGE_TYPE_PPM,
-            .data.pix = pdf_data[i],
+            .data.pix = &pix,
         };
         char* string = string_from_img(ctx, &img);
         if (!string) continue;

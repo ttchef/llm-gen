@@ -103,6 +103,11 @@ int32_t generate_glyphs(CharacterSet *sets, char **fonts) {
 }
 
 int32_t get_character_sets(struct Context *ctx, const char* font_dir) {
+    if (!font_dir) {
+        fprintf(stderr, "Must specify 1 font template directory\n");
+        return 1;
+    }
+
     char** fonts = darrayCreate(char*);
     if (read_files_in_dir(font_dir, &fonts) || darrayLength(fonts) <= 0) {
         fprintf(stderr, "Failed getting font templates\n");

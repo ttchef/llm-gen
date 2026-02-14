@@ -7,6 +7,6 @@
 
 #include <context.h> 
 
-int32_t convert_pdf_to_img(Context* ctx, char* path, fz_pixmap*** pix_array);   
+int32_t convert_pdf_to_img(Context* ctx, char* path, fz_pixmap* piximg);   
 
 #endif // PDF_H

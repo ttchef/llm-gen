@@ -15,7 +15,9 @@ typedef struct Images {
     uint8_t** images_data;
 } Images;
 
-Images generate_font_image(Page page, char* text, CharacterSet* sets, size_t sets_count);
+struct Context;
+int32_t generate_font_image(struct Context* ctx, Page page, char* text, CharacterSet* sets, size_t sets_count);
+int32_t write_images(struct Context* ctx, const char* dir_path);
 void destroy_images(Images* images);
 
 #endif // IMAGE_H

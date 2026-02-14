@@ -1,14 +1,16 @@
 
-#include "ocr.h"
-#include "utils.h"
 #include <image.h>
+#include <context.h>
 #include <glyph.h>
 #include <glyph_utils.h>
 
+#include <linux/limits.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
 #include <math.h>
+
+#include <stb_image_write.h>
 
 typedef struct DrawContext {
     uint32_t current_x;
@@ -17,7 +19,7 @@ typedef struct DrawContext {
     uint32_t channels;
 } DrawContext;
 
-#define BBP 4
+#define BPP 4
 
 static void skip_unicode(char* out, size_t* size, const char* input) {
     size_t i = 0;
@@ -147,7 +149,7 @@ static void draw_background(Images* images, int32_t current_image, enum PageBack
     }
 }
 
-static void draw_char(uint8_t c, DrawContext* ctx, CharacterSet* set, Page* page, uint8_t* output_data) {
+static void draw_char(uint8_t c, DrawContext* draw_ctx, CharacterSet* set, Page* page, uint8_t* output_data) {
     int32_t tile_index = char_to_tile_index(c);
     const uint32_t tile_offset_x = CHAR_OFFSET_X + (tile_index % SYM_PER_LINE) * CHAR_SIZE;
     const uint32_t tile_offset_y = CHAR_OFFSET_Y + (tile_index / SYM_PER_LINE) * CHAR_SIZE;
@@ -158,19 +160,19 @@ static void draw_char(uint8_t c, DrawContext* ctx, CharacterSet* set, Page* page
 
     const uint32_t template_center_offset_x = CHAR_SIZE * 0.5f - char_width * 0.5f;
 
-    if (ctx->current_x + char_width >= ctx->usable_pixels_x) {
-        ctx->current_y += CHAR_SIZE;
-        ctx->current_x = 0;
+    if (draw_ctx->current_x + char_width >= draw_ctx->usable_pixels_x) {
+        draw_ctx->current_y += CHAR_SIZE;
+        draw_ctx->current_x = 0;
     }
 
-    if (ctx->current_x == 0) ctx->current_x = page->padding.x;
-    if (ctx->current_y == 0) ctx->current_y = page->padding.y;
+    if (draw_ctx->current_x == 0) draw_ctx->current_x = page->padding.x;
+    if (draw_ctx->current_y == 0) draw_ctx->current_y = page->padding.y;
 
     for (uint32_t y = 0; y < CHAR_SIZE; y++) {
         for (uint32_t x = 0; x < char_width; x++) {
-            uint32_t dst_x = ctx->current_x + x;
-            uint32_t dst_y = ctx->current_y + y;
-            uint32_t dst_index = (dst_y * page->dim.width + dst_x) * ctx->channels;
+            uint32_t dst_x = draw_ctx->current_x + x;
+            uint32_t dst_y = draw_ctx->current_y + y;
+            uint32_t dst_index = (dst_y * page->dim.width + dst_x) * draw_ctx->channels;
 
             uint32_t src_x = tile_offset_x + (CHAR_SIZE * 0.5f) - (char_width * 0.5f) + char_offset_x + x;
             uint32_t src_y = tile_offset_y + y;
@@ -190,17 +192,17 @@ static void draw_char(uint8_t c, DrawContext* ctx, CharacterSet* set, Page* page
             uint8_t luminance = pixel_luminance(pixel, set->image_channels);
 
             if (luminance < 120) {
-                for (int32_t c = 0; c < ctx->channels; c++) {
+                for (int32_t c = 0; c < draw_ctx->channels; c++) {
                     output_data[dst_index + c] = luminance;
                 }
             }
         }
     }
 
-    ctx->current_x += char_width;
+    draw_ctx->current_x += char_width;
 }
 
-Images generate_font_image(Page page, char* text, CharacterSet* sets, size_t sets_count) {
+int32_t generate_font_image(struct Context* ctx, Page page, char* text, CharacterSet* sets, size_t sets_count) {
     size_t asci_text_len;
     skip_unicode(NULL, &asci_text_len, text);
     uint8_t asci_text[asci_text_len];
@@ -228,7 +230,7 @@ Images generate_font_image(Page page, char* text, CharacterSet* sets, size_t set
     const int32_t chars_per_page = (int32_t)ceilf((float)asci_text_len / (float)num_needed_pages);
     int32_t text_index = 0;
 
-    DrawContext ctx = {
+    DrawContext draw_ctx = {
         .usable_pixels_x = usable_pixels_x,
         .channels = (uint32_t)images.channels,
     };
@@ -238,13 +240,13 @@ Images generate_font_image(Page page, char* text, CharacterSet* sets, size_t set
         memset(images.images_data[i], 255, images.width * images.height * images.channels);
         if (!images.images_data[i]) {
             fprintf(stderr, "failed to allocate rendering image: %d\n", i);
-            return images;
+            return 1;
         }
         
         draw_background(&images, i, page.bg_type);
 
-        ctx.current_x = 0;
-        ctx.current_y = 0;
+        draw_ctx.current_x = 0;
+        draw_ctx.current_y = 0;
 
         int32_t j = 0;
         for (; j < chars_per_page; j++) {
@@ -252,8 +254,8 @@ Images generate_font_image(Page page, char* text, CharacterSet* sets, size_t set
             if (asci_text[text_index + j] == '\n' ||
                 (asci_text[text_index + j] == '\\' && asci_text[text_index + j + 1] == 'n')) {
                 if (asci_text[text_index + j] == '\\') j++;
-                ctx.current_x = page.padding.x;
-                ctx.current_y += CHAR_SIZE;
+                draw_ctx.current_x = page.padding.x;
+                draw_ctx.current_y += CHAR_SIZE;
                 continue;
             }
             else if (asci_text[text_index + j] == '\\') {
@@ -267,12 +269,24 @@ Images generate_font_image(Page page, char* text, CharacterSet* sets, size_t set
             }
 
             int32_t selected_set = rand() % sets_count;
-            draw_char(asci_text[text_index + j], &ctx, &sets[selected_set], &page, images.images_data[i]);
+            draw_char(asci_text[text_index + j], &draw_ctx, &sets[selected_set], &page, images.images_data[i]);
         }
         text_index += j; // TODO: maybe + 1
     }
 
-    return images;
+    ctx->gen_imgs = images;
+
+    return 0;
+}
+
+int32_t write_images(struct Context *ctx, const char *dir_path) {
+    for (int32_t i = 0; i < ctx->gen_imgs.images_count; i++) {
+        char buffer[PATH_MAX];
+        snprintf(buffer, PATH_MAX, "%s/Page_%d.png", dir_path, i);
+        stbi_write_png(buffer, ctx->gen_imgs.width, ctx->gen_imgs.height, ctx->gen_imgs.channels,
+                       ctx->gen_imgs.images_data[i], ctx->gen_imgs.width * ctx->gen_imgs.channels);
+    }
+    return 0;
 }
 
 void destroy_images(Images *images) {
@@ -281,4 +295,5 @@ void destroy_images(Images *images) {
     }
     if (images->images_data) free(images->images_data);
 }
+
 
