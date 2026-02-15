@@ -138,7 +138,7 @@ static char *temp_render_buffer = NULL;
 static int temp_render_buffer_len = 0;
 
 // Call after closing the window to clean up the render buffer
-void Clay_Raylib_Close()
+void Clay_Raylib_Close(void)
 {
     if(temp_render_buffer) free(temp_render_buffer);
     temp_render_buffer_len = 0;

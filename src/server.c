@@ -93,6 +93,10 @@ int32_t main(void) {
                 filename = "index.wasm";
                 content_type = "application/wasm";
             }
+            else if (strcmp(path, "/index.data") == 0) {
+                filename = "index.data";
+                content_type = "application/octet-stream";
+            }
             else {
                 printf("Result: 404 Not Found for %s\n", path);
                 const char *not_found = "HTTP/1.1 404 Not Found\r\nContent-Length: 0\r\nConnection: close\r\n\r\n";

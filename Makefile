@@ -5,7 +5,7 @@ VENDOR_DIR := vendor
 INCLUDE_DIR := include
 BUILD_DIR := build
 LIB_DIR := $(BUILD_DIR)/libs
-ASSES_DIR := assets
+ASSET_DIR := assets
 
 EXE_NAME := main
 
@@ -40,7 +40,7 @@ RAYLIB_DIR := $(BUILD_DIR)/raylib
 
 INCLUDE_PATHS := -I$(INCLUDE_DIR) -I$(VENDOR_DIR)
 OPTIMISATIONS := -Wall -Wextra -pedantic -O2 -fsanitize=address
-DEFINIES := -DBUILD_DIR=\"$(BUILD_DIR)\" -DASSETS_DIR=\"$(ASSES_DIR)\"
+DEFINIES := -DBUILD_DIR=\"$(BUILD_DIR)\" -DASSETS_DIR=\"$(ASSET_DIR)\"
 
 EMCC_SRC_FILES := $(shell find $(SRC_WEB_DIR) -type f -name '*.c')
 EMCC_RAYLIB_INCLUDE_PATH := $(RAYLIB_DIR)/src
@@ -77,10 +77,15 @@ website: $(RAYLIB_WEB_LIB)
 		-o $(BUILD_DIR)/website/index.html \
 		$(EMCC_CFLAGS) \
 		$(EMCC_LDFLAGS) \
-		--shell-file $(EMCC_TEMPLATE)
+		--shell-file $(EMCC_TEMPLATE) \
+		--preload-file $(ASSET_DIR)
 
 app: $(OBJ_FILES)
 	$(CC) $(CFLAGS) $^ -o $(BUILD_DIR)/website/$(EXE_NAME) $(LDFLAGS)
+
+run:
+	cd $(BUILD_DIR)/website 
+	./$(EXE_NAME)
 
 $(BUILD_DIR)/obj/%.o: $(SRC_DIR)/%.c 
 	$(CC) $(CFLAGS) -c $< -o $@
