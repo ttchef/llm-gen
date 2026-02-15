@@ -5,6 +5,7 @@ VENDOR_DIR := vendor
 INCLUDE_DIR := include
 BUILD_DIR := build
 LIB_DIR := $(BUILD_DIR)/libs
+ASSES_DIR := assets
 
 EXE_NAME := main
 
@@ -37,14 +38,18 @@ RAYLIB_COMMIT := 180c3c13ba3ab6ca10b43ced8464aed0db7df566
 RAYLIB_WEB_LIB := libraylib.web.a
 RAYLIB_DIR := $(BUILD_DIR)/raylib
 
+INCLUDE_PATHS := -I$(INCLUDE_DIR) -I$(VENDOR_DIR)
+OPTIMISATIONS := -Wall -Wextra -pedantic -O2 -fsanitize=address
+DEFINIES := -DBUILD_DIR=\"$(BUILD_DIR)\" -DASSETS_DIR=\"$(ASSES_DIR)\"
+
 EMCC_SRC_FILES := $(shell find $(SRC_WEB_DIR) -type f -name '*.c')
 EMCC_RAYLIB_INCLUDE_PATH := $(RAYLIB_DIR)/src
-EMCC_CFLAGS := -Wall -Wextra -pedantic -O2 -I$(VENDOR_DIR) -I$(EMCC_RAYLIB_INCLUDE_PATH) -s TOTAL_STACK=16777216 -s USE_GLFW=3 -s ASYNCIFY -s FORCE_FILESYSTEM=1 
+EMCC_CFLAGS := $(OPTIMISATIONS) $(INCLUDE_PATHS) -I$(EMCC_RAYLIB_INCLUDE_PATH) $(DEFINIES) -s TOTAL_STACK=16777216 -s USE_GLFW=3 -s ASYNCIFY -s FORCE_FILESYSTEM=1 
 EMCC_LDFLAGS := -L $(LIB_DIR) -lraylib.web
 EMCC_TEMPLATE := $(SRC_WEB_DIR)/template.html
 
 CC := gcc
-CFLAGS := -g -Wall -Wextra -pedantic -fsanitize=address -I$(INCLUDE_DIR) -I$(VENDOR_DIR) -DBUILD_DIR=\"$(BUILD_DIR)\"
+CFLAGS := $(OPTIMISATIONS) $(INCLUDE_PATHS) $(DEFINIES)
 LDFLAGS := -lraylib -lmupdf -lleptonica -ltesseract -lcurl -lwsJson -lm
 
 .PHONY: app clean website

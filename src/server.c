@@ -21,7 +21,7 @@
 
 #define PORT 8001
 
-int32_t main() {
+int32_t main(void) {
     int32_t server_fd = socket(AF_INET, SOCK_STREAM, 0);
     if (server_fd == 0) {
         fprintf(stderr, "Failed to create server socket\n");

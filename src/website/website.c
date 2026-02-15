@@ -2,16 +2,38 @@
 #include <emscripten/emscripten.h>
 #include <emscripten/html5.h>
 #include <raylib.h> 
+
+#include <stdlib.h>
+#include <stdio.h>
 #include <math.h>
+
+#include <website/web_context.h>
+#include <website/clay_renderer_raylib.h>
 
 #define CLAY_IMPLEMENTATION
 #include <clay.h>
 
-int main(void)
-{
-    InitWindow(800, 600, "ttchef");
-    SetConfigFlags(FLAG_WINDOW_RESIZABLE);
+void handle_clay_errors(Clay_ErrorData error_data) {
+    fprintf(stderr, "[CLAY_ERROR]: %s\n", error_data.errorText.chars);
+}
 
+int main(void) {
+    WebContext ctx = { 
+        .window = {
+            .width = 800,
+            .height = 600,
+        },
+    };
+
+    uint64_t total_mem = Clay_MinMemorySize();
+    Clay_Arena arena = Clay_CreateArenaWithCapacityAndMemory(total_mem, malloc(total_mem));
+    Clay_Raylib_Initialize(ctx.window.width, ctx.window.height,
+                           "idk bro", FLAG_WINDOW_RESIZABLE | FLAG_MSAA_4X_HINT);
+
+    Font fonts[] = {
+        LoadFontEx(ASSETS_DIR"fonts/AdwaitaSans-Regular.ttf", 20, 0, 250),
+    };
+    
     // Get browser size
     double w, h;
     emscripten_get_element_css_size("#canvas", &w, &h);
@@ -72,7 +94,8 @@ int main(void)
         EndDrawing();
     }
 
-    CloseWindow();
+    Clay_Raylib_Close();
+
     return 0;
 }
 
