@@ -1,6 +1,7 @@
 
-#include <clay-renderers/clay_renderer_raylib.h>
+#include <raylib.h> 
 #include <raymath.h>
+#include <clay.h>
 
 #include <stdint.h>
 #include <stdlib.h>

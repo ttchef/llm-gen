@@ -4,6 +4,7 @@ Project is in construction!!!
 Only linux
 
 # Dependencies
+ - emcc compiler for webasm
  - ollama running deepseek-r1 locally on port 11434 (default ollama port)
  - raylib (for editor)
  - curl
