@@ -12,9 +12,6 @@ Only linux
  - leptonica (tesseract dependency)
  - mupdf
  - wsJson (own Json library)
-
-## Single Headers
- - raygui 
  - stb_image
  - stb_image_write
  - clay
