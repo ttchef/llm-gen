@@ -37,13 +37,13 @@ int main(void) {
     Clay_Raylib_Initialize(ctx.window.width, ctx.window.height,
                            "idk bro", FLAG_WINDOW_RESIZABLE | FLAG_MSAA_4X_HINT);
     Font fonts[] = {
-        LoadFontEx("../../"ASSETS_DIR"/fonts/AdwaitaSans-Regular.ttf", 20, 0, 250), // TODO: tmp with the path
-        LoadFontEx("../../"ASSETS_DIR"/fonts/AdwaitaSans-Regular.ttf", 40, 0, 250), 
-        LoadFontEx("../../"ASSETS_DIR"/fonts/AdwaitaMono-Bold.ttf", 100, 0, 250), 
+        LoadFontEx(ASSETS_DIR"/fonts/AdwaitaSans-Regular.ttf", 20, 0, 250), // TODO: tmp with the path
+        LoadFontEx(ASSETS_DIR"/fonts/AdwaitaSans-Regular.ttf", 40, 0, 250), 
+        LoadFontEx(ASSETS_DIR"/fonts/AdwaitaMono-Bold.ttf", 100, 0, 250), 
     };
 
     Texture2D textures[] = {
-        LoadTexture("../../"ASSETS_DIR"/images/logo.png"),
+        LoadTexture(ASSETS_DIR"/images/logo.png"),
     };
 
     Clay_SetMeasureTextFunction(Raylib_MeasureText, fonts);

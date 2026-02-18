@@ -24,8 +24,10 @@ SRC_FILES := $(filter-out $(SRC_WEB_DIR)/%, $(SRC_FILES))
 
 ifeq ($(SERVER),true)
 	SRC_FILES += $(SRC_DIR)/server.c
+	WEBSITE_DEP := website
 else 
 	SRC_FILES += $(SRC_DIR)/cli.c 
+	WEBSITE_DEP := 
 endif
 
 OBJ_FILES := $(patsubst $(SRC_DIR)/%.c,$(BUILD_DIR)/obj/%.o,$(SRC_FILES))
@@ -52,9 +54,9 @@ CC := gcc
 CFLAGS := $(OPTIMISATIONS) $(INCLUDE_PATHS) $(DEFINIES)
 LDFLAGS := -lraylib -lmupdf -lleptonica -ltesseract -lcurl -lm
 
-.PHONY: app clean website
+.PHONY: app clean website assets_cp
 
-all: folders website app
+all: folders $(WEBSITE_DEP) app
 
 folders:
 	mkdir -p $(BUILD_DIR)
@@ -62,6 +64,9 @@ folders:
 	mkdir -p $(BUILD_DIR)/obj/containers
 	mkdir -p $(BUILD_DIR)/website
 	mkdir -p $(LIB_DIR)
+
+assets_cp:
+	cp -r $(ASSET_DIR) $(BUILD_DIR)/website/
 
 $(RAYLIB_WEB_LIB): 
 	if [ ! -d "$(RAYLIB_DIR)" ]; then \
@@ -72,7 +77,7 @@ $(RAYLIB_WEB_LIB):
 	$(MAKE) -C $(RAYLIB_DIR)/src PLATFORM=PLATFORM_WEB
 	cp $(RAYLIB_DIR)/src/$(RAYLIB_WEB_LIB) $(LIB_DIR)/$(RAYLIB_WEB_LIB)
 
-website: $(RAYLIB_WEB_LIB)
+website: $(RAYLIB_WEB_LIB) assets_cp
 	$(EMCC) $(EMCC_SRC_FILES) \
 		-o $(BUILD_DIR)/website/index.html \
 		$(EMCC_CFLAGS) \
