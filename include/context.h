@@ -6,7 +6,8 @@
 #include <tesseract/capi.h>
 #include <glyph.h>
 #include <image.h>
-#include <wsJson/ws_json.h>
+
+#include <wsJson.h>
 
 typedef struct Context {
     fz_context* pdf_ctx;

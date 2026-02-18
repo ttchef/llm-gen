@@ -193,7 +193,7 @@ static void draw_char(uint8_t c, DrawContext* draw_ctx, CharacterSet* set, Page*
 
             if (luminance < 120) {
                 for (int32_t c = 0; c < draw_ctx->channels; c++) {
-                    output_data[dst_index + c] = luminance;
+                    output_data[dst_index + c] = 0;
                 }
             }
         }

@@ -50,7 +50,7 @@ EMCC_TEMPLATE := $(SRC_WEB_DIR)/template.html
 
 CC := gcc
 CFLAGS := $(OPTIMISATIONS) $(INCLUDE_PATHS) $(DEFINIES)
-LDFLAGS := -lraylib -lmupdf -lleptonica -ltesseract -lcurl -lwsJson -lm
+LDFLAGS := -lraylib -lmupdf -lleptonica -ltesseract -lcurl -lm
 
 .PHONY: app clean website
 

@@ -1,4 +1,5 @@
 
+#define WS_JSON_IMPLEMENTATION
 #include <context.h>
 #include <mupdf/fitz/context.h>
 #include <image.h>
