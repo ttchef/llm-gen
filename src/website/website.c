@@ -35,7 +35,7 @@ int main(void) {
     Clay_Arena arena = Clay_CreateArenaWithCapacityAndMemory(total_mem, malloc(total_mem));
     Clay_Initialize(arena, (Clay_Dimensions){ctx.window.width, ctx.window.height}, (Clay_ErrorHandler){ handle_clay_errors });
     Clay_Raylib_Initialize(ctx.window.width, ctx.window.height,
-                           "idk bro", FLAG_WINDOW_RESIZABLE | FLAG_MSAA_4X_HINT);
+                           "ttchef", FLAG_WINDOW_RESIZABLE | FLAG_MSAA_4X_HINT);
     Font fonts[] = {
         LoadFontEx(ASSETS_DIR"/fonts/AdwaitaSans-Regular.ttf", 20, 0, 250), // TODO: tmp with the path
         LoadFontEx(ASSETS_DIR"/fonts/AdwaitaSans-Regular.ttf", 40, 0, 250), 
