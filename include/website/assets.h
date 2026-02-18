@@ -5,6 +5,18 @@
 #include <raylib.h>
 #include <stdint.h>
 
+enum {
+    ASSET_FONT_20,
+    ASSET_FONT_40,
+    ASSET_FONT_100,
+    ASSET_FONT_COUNT,
+};
+
+enum {
+    ASSET_IMAGE_LOGO,
+    ASSET_IMAGE_COUNT,
+};
+
 void download_texture(Texture2D* tex, const char* path);
 void download_font(Font* font, const char* path, int32_t fontsize, const int32_t* codepoints, int32_t codepoints_count);
 

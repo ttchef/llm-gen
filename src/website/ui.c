@@ -1,7 +1,8 @@
 
-#include "website/web_context.h"
 #include <website/ui.h>
 #include <website/clay_renderer_raylib.h>
+#include <website/assets.h>
+
 #include <clay.h>
 
 #include <raylib.h>
@@ -57,7 +58,7 @@ static void compute_search_layout(WebContext* ctx, Texture2D* textures) {
                     },
                 }) {
                     CLAY_TEXT(CLAY_STRING("ttchef.org"), CLAY_TEXT_CONFIG({
-                        .fontId = 2,
+                        .fontId = ASSET_FONT_100,
                         .fontSize = 100,
                         .textColor = UI_COLOR_WHITE,
                     }));

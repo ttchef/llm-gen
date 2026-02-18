@@ -10,6 +10,7 @@
 #include <website/web_context.h>
 #include <website/clay_renderer_raylib.h>
 #include <website/ui.h>
+#include <website/assets.h>
 
 #define CLAY_IMPLEMENTATION
 #include <clay.h>
@@ -36,15 +37,14 @@ int main(void) {
     Clay_Initialize(arena, (Clay_Dimensions){ctx.window.width, ctx.window.height}, (Clay_ErrorHandler){ handle_clay_errors });
     Clay_Raylib_Initialize(ctx.window.width, ctx.window.height,
                            "ttchef", FLAG_WINDOW_RESIZABLE | FLAG_MSAA_4X_HINT);
-    Font fonts[] = {
-        LoadFontEx(ASSETS_DIR"/fonts/AdwaitaSans-Regular.ttf", 20, 0, 250), // TODO: tmp with the path
-        LoadFontEx(ASSETS_DIR"/fonts/AdwaitaSans-Regular.ttf", 40, 0, 250), 
-        LoadFontEx(ASSETS_DIR"/fonts/AdwaitaMono-Bold.ttf", 100, 0, 250), 
-    };
 
-    Texture2D textures[] = {
-        LoadTexture(ASSETS_DIR"/images/logo.png"),
-    };
+    Font fonts[ASSET_FONT_COUNT];
+    download_font(&fonts[ASSET_FONT_20], ASSETS_DIR"/fonts/AdwaitaSans-Regular.ttf", 20, 0, 250);
+    download_font(&fonts[ASSET_FONT_40], ASSETS_DIR"/fonts/AdwaitaSans-Regular.ttf", 40, 0, 250);
+    download_font(&fonts[ASSET_FONT_100], ASSETS_DIR"/fonts/AdwaitaMono-Bold.ttf", 100, 0, 250);
+
+    Texture2D textures[ASSET_IMAGE_COUNT];
+    download_texture(&textures[ASSET_IMAGE_LOGO], ASSETS_DIR"/images/logo.png");
 
     Clay_SetMeasureTextFunction(Raylib_MeasureText, fonts);
     

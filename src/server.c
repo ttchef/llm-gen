@@ -76,6 +76,7 @@ int32_t main(void) {
         char* filename = NULL;
         char* content_type = NULL;
 
+        /* TODO: make this good!!!! */
         if (strcmp(method, "GET") == 0) {
             if (strcmp(path, "/style.css") == 0) {
                 filename = "style.css";
@@ -96,6 +97,18 @@ int32_t main(void) {
             else if (strcmp(path, "/index.data") == 0) {
                 filename = "index.data";
                 content_type = "application/octet-stream";
+            }
+            else if (strcmp(path, "/assets/fonts/AdwaitaSans-Regular.ttf") == 0) {
+                filename = "assets/fonts/AdwaitaSans-Regular.ttf";
+                content_type = "font/ttf";
+            }
+            else if (strcmp(path, "/assets/fonts/AdwaitaMono-Bold.ttf") == 0) {
+                filename = "assets/fonts/AdwaitaMono-Bold.ttf";
+                content_type = "font/ttf";
+            }
+            else if (strcmp(path, "/assets/images/logo.png") == 0) {
+                filename = "assets/images/logo.png";
+                content_type = "image/png";
             }
             else {
                 printf("Result: 404 Not Found for %s\n", path);
