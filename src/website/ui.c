@@ -1,21 +1,15 @@
 
+#include "website/web_context.h"
 #include <website/ui.h>
 #include <website/clay_renderer_raylib.h>
 #include <website/assets.h>
+#include <website/ui_modules.h>
+#include <website/ui_utils.h>
 
 #include <clay.h>
-
 #include <raylib.h>
 
-/* Temp */
-const Clay_Color UI_COLOR_LIGHT_GRAY = (Clay_Color){120, 120, 120, 255};
-const Clay_Color UI_COLOR_DARK_GRAY = (Clay_Color){80, 80, 80, 255};
-const Clay_Color UI_COLOR_DARK_DARK_GRAY = (Clay_Color){60, 60, 60, 255};
-const Clay_Color UI_COLOR_DARK_DARK_DARK_GRAY = (Clay_Color){40, 40, 40, 255};
-const Clay_Color UI_COLOR_BLACK = (Clay_Color){0, 0, 0, 255};
-const Clay_Color UI_COLOR_WHITE = (Clay_Color){255, 255, 255, 255};
-const Clay_Color UI_COLOR_RED = (Clay_Color){255, 0, 0, 255};
-const Clay_Color UI_COLOR_LIGHT_BLUE = (Clay_Color){84, 145, 244, 125};
+#include <stdio.h>
 
 static void compute_search_layout(WebContext* ctx, Texture2D* textures) {
     CLAY_AUTO_ID({
@@ -72,11 +66,21 @@ static void compute_search_layout(WebContext* ctx, Texture2D* textures) {
             },
             }) {
                 CLAY_AUTO_ID({
-                    .layout = { CLAY_SIZING_GROW(0), CLAY_SIZING_GROW(0) },
+                    .layout = { 
+                        .sizing = { CLAY_SIZING_GROW(0), CLAY_SIZING_GROW(0) },
+                    },
                     .backgroundColor = UI_COLOR_DARK_GRAY,
                     .cornerRadius = CLAY_CORNER_RADIUS(50),
                 }) {
 
+                    if (IsMouseButtonDown(MOUSE_BUTTON_LEFT) && Clay_Hovered()) {
+                        ctx->browse_font_maps.input = true;
+                    }
+                    else if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
+                        ctx->browse_font_maps.input = false;
+                    }
+
+                    module_text_box(&ctx->browse_font_maps);
                 }
             }
         }
@@ -86,13 +90,30 @@ static void compute_search_layout(WebContext* ctx, Texture2D* textures) {
 void compute_ui_layout(WebContext *ctx, Texture2D* textures) {
     Clay_BeginLayout();
 
-    compute_search_layout(ctx, textures);
+    switch (ctx->state) {
+        case WEB_STATE_BROWSE_FONT_MAP:
+            compute_search_layout(ctx, textures);
+            break;
+    }
+}
+
+void init_ui(WebContext *ctx) {
+    ctx->browse_font_maps.type = TEXT_BOX_TYPE_ALL_ALHPA;
+    ctx->browse_font_maps.index = 0;
+    ctx->browse_font_maps.len = 10;
 }
 
 void update_ui(WebContext *ctx) {
     bool is_mouse_down = IsMouseButtonDown(MOUSE_BUTTON_LEFT);
+    ctx->mouse_prev = ctx->mouse_curr;
+    ctx->mouse_curr = GetMousePosition();
+
     Clay_SetLayoutDimensions((Clay_Dimensions){ctx->window.width, ctx->window.height});
     Clay_SetPointerState((Clay_Vector2){ctx->mouse_curr.x, ctx->mouse_curr.y}, is_mouse_down);
+
+    if (ctx->browse_font_maps.input) {
+        module_text_box_add(&ctx->browse_font_maps, NULL);
+    }
 }
 
 void draw_ui(WebContext *ctx, Font *fonts) {

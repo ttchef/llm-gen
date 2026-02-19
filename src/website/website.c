@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <math.h>
+#include <string.h>
 
 #include <website/web_context.h>
 #include <website/clay_renderer_raylib.h>
@@ -24,7 +25,7 @@ void handle_clay_errors(Clay_ErrorData error_data) {
 }
 
 
-int main(void) {
+int32_t main(void) {
     WebContext ctx = { 
         .window = {
             .width = 800,
@@ -50,13 +51,15 @@ int main(void) {
     
     double w, h;
     emscripten_get_element_css_size("#canvas", &w, &h);
-    emscripten_set_canvas_element_size("#canvas", (int)w, (int)h);
+    emscripten_set_canvas_element_size("#canvas", (int32_t)w, (int32_t)h);
 
     SetTargetFPS(60);
 
     SetWindowSize(w, h);
     ctx.window.width = GetScreenWidth();
     ctx.window.height = GetScreenHeight();
+
+    init_ui(&ctx);
 
     while (!WindowShouldClose()) {
         update_ui(&ctx); 
