@@ -1,5 +1,6 @@
 
 #include "website/clay_renderer_raylib.h"
+#include "website/web_context.h"
 #include <website/ui_modules.h>
 #include <website/ui_utils.h>
 #include <website/assets.h>
@@ -22,6 +23,19 @@ static void check_input_number(char* number, char* number_string) {
     }
 }
 
+static void text_box_add_char(TextBox* box, char c) {
+    size_t len = strlen(box->array);
+    int32_t delta = len - box->index;
+
+    if (box->len > TEXT_BOX_MAX_INPUT_CHARS) return;
+    if ((int32_t)len + 1 > box->len) return;
+
+    char buffer[delta];
+    memcpy(buffer, box->array + box->index, delta);
+    memcpy(box->array + box->index + 1, buffer, delta);
+    box->array[box->index++] = c;
+}
+
 void module_text_box_add(TextBox* box, char* max_num) {
     char c = GetCharPressed();
     char key = GetKeyPressed();
@@ -29,19 +43,29 @@ void module_text_box_add(TextBox* box, char* max_num) {
     if (box->type & TEXT_BOX_TYPE_NUMBERS) {
         if (c >= 48 && c <= 57 && box->index < box->len) {
             if (!(c == 48 && box->index == 0)) {
-                box->array[box->index++] = c;
+                text_box_add_char(box, c);
             }
         }
     }
 
     if (box->type & TEXT_BOX_TYPE_LOWERCASE_ALPHA) {
         if (((c >= 97 && c <= 122) || (c == 32)) && box->index < box->len) {
-            box->array[box->index++] = c;
+            text_box_add_char(box, c);
         }
     }
     if (box->type & TEXT_BOX_TYPE_UPPERCASE_ALHPA && IsKeyDown(KEY_LEFT_SHIFT)) {
         if (((c >= 65 && c <= 90) || (c == 32)) && box->index < box->len) {
-            box->array[box->index++] = c;
+            text_box_add_char(box, c);
+        }
+    }
+
+    if (IsKeyPressed(KEY_LEFT)) {
+        box->index--;
+    }
+
+    if (IsKeyPressed(KEY_RIGHT)) {
+        if (box->index + 1 < (int32_t)strlen(box->array)) {   
+            box->index++;
         }
     }
 
@@ -62,27 +86,29 @@ void module_text_box(TextBox *box) {
         .layout = {
             .layoutDirection = CLAY_LEFT_TO_RIGHT,
             .sizing = { CLAY_SIZING_GROW(0), CLAY_SIZING_GROW(0) },
-            .padding = { 10, 0, 0, 0 },
+            .padding = { 25, 0, 0, 0 },
             .childAlignment = { CLAY_ALIGN_X_LEFT, CLAY_ALIGN_Y_CENTER },
             .childGap = 0,
         },
     }) {
-        Clay_String dym_str = {
-            .chars = box->array,
-            .length = strlen(box->array),
-            .isStaticallyAllocated = true,
-        };
-
-        CLAY_TEXT(dym_str, CLAY_TEXT_CONFIG({
+        Clay_TextElementConfig config = {
             .fontId = ASSET_FONT_40,
             .fontSize = 40,
             .textColor = UI_COLOR_WHITE,
-        }));
+        };
+
+        Clay_String str_part_one = {
+            .chars = box->array,
+            .length = box->index,
+            .isStaticallyAllocated = true,
+        };
+
+        CLAY_TEXT(str_part_one, &config);
 
         if (box->input) {
             CLAY_AUTO_ID({
                 .layout = { 
-                    .sizing = { CLAY_SIZING_GROW(0), CLAY_SIZING_PERCENT(0.8f) },   
+                    .sizing = { CLAY_SIZING_FIT(0), CLAY_SIZING_PERCENT(0.65f) },   
                 },
                 .border = {
                     .color = UI_COLOR_WHITE,
@@ -90,6 +116,15 @@ void module_text_box(TextBox *box) {
                 },
             });
         }
+
+        Clay_String str_part_two = {
+            .chars = box->array + box->index,
+            .length = strlen(box->array + box->index),
+            .isStaticallyAllocated = true,
+        };
+
+
+        CLAY_TEXT(str_part_two, &config);
     }
 }
 

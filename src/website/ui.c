@@ -98,9 +98,9 @@ void compute_ui_layout(WebContext *ctx, Texture2D* textures) {
 }
 
 void init_ui(WebContext *ctx) {
-    ctx->browse_font_maps.type = TEXT_BOX_TYPE_ALL_ALHPA;
+    ctx->browse_font_maps.type = TEXT_BOX_TYPE_ALL;
     ctx->browse_font_maps.index = 0;
-    ctx->browse_font_maps.len = 20;
+    ctx->browse_font_maps.len = 35;
 }
 
 void update_ui(WebContext *ctx) {

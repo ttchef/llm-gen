@@ -18,6 +18,7 @@ typedef enum TextBoxType {
     TEXT_BOX_TYPE_LOWERCASE_ALPHA = (1 << 1),
     TEXT_BOX_TYPE_UPPERCASE_ALHPA = (1 << 2),
     TEXT_BOX_TYPE_ALL_ALHPA = (3 << 1),
+    TEXT_BOX_TYPE_ALL = 0xfffffff,
 } TextBoxType;
 
 typedef struct TextBox {
@@ -26,9 +27,6 @@ typedef struct TextBox {
     char array[TEXT_BOX_MAX_INPUT_CHARS];
     int32_t len; /* Actualy limited len */
     int32_t index;
-
-    int32_t width;
-    int32_t height;
 } TextBox;
 
 typedef struct Window {
