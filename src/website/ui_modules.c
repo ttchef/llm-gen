@@ -33,13 +33,14 @@ void module_text_box_add(TextBox* box, char* max_num) {
             }
         }
     }
+
     if (box->type & TEXT_BOX_TYPE_LOWERCASE_ALPHA) {
-        if (c >= 97 && c <= 122 && box->index < box->len) {
+        if (((c >= 97 && c <= 122) || (c == 32)) && box->index < box->len) {
             box->array[box->index++] = c;
         }
     }
     if (box->type & TEXT_BOX_TYPE_UPPERCASE_ALHPA && IsKeyDown(KEY_LEFT_SHIFT)) {
-        if (c >= 65 && c <= 90 && box->index < box->len) {
+        if (((c >= 65 && c <= 90) || (c == 32)) && box->index < box->len) {
             box->array[box->index++] = c;
         }
     }
@@ -59,9 +60,11 @@ void module_text_box_add(TextBox* box, char* max_num) {
 void module_text_box(TextBox *box) {
     CLAY_AUTO_ID({
         .layout = {
+            .layoutDirection = CLAY_LEFT_TO_RIGHT,
             .sizing = { CLAY_SIZING_GROW(0), CLAY_SIZING_GROW(0) },
             .padding = { 10, 0, 0, 0 },
             .childAlignment = { CLAY_ALIGN_X_LEFT, CLAY_ALIGN_Y_CENTER },
+            .childGap = 0,
         },
     }) {
         Clay_String dym_str = {
@@ -75,6 +78,18 @@ void module_text_box(TextBox *box) {
             .fontSize = 40,
             .textColor = UI_COLOR_WHITE,
         }));
+
+        if (box->input) {
+            CLAY_AUTO_ID({
+                .layout = { 
+                    .sizing = { CLAY_SIZING_GROW(0), CLAY_SIZING_PERCENT(0.8f) },   
+                },
+                .border = {
+                    .color = UI_COLOR_WHITE,
+                    .width = (Clay_BorderWidth){2, 0, 0, 0, 2 },
+                },
+            });
+        }
     }
 }
 
