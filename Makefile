@@ -94,6 +94,10 @@ run:
 $(BUILD_DIR)/obj/%.o: $(SRC_DIR)/%.c 
 	$(CC) $(CFLAGS) -c $< -o $@
 
+# Just for counting lines of code
+cloc:
+	cloc . --exclude-dir=vendor,build
+
 clean:
 	rm -rf $(BUILD_DIR)
 

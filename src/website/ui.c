@@ -1,5 +1,4 @@
 
-#include "website/web_context.h"
 #include <website/ui.h>
 #include <website/clay_renderer_raylib.h>
 #include <website/assets.h>
@@ -8,8 +7,21 @@
 
 #include <clay.h>
 #include <raylib.h>
+#include <emscripten.h>
 
 #include <stdio.h>
+
+#include <emscripten.h>
+
+EM_JS(void, hide_element, (const char* id), {
+  var element = document.getElementById(UTF8ToString(id));
+  if (element) element.style.display = "none";
+});
+
+EM_JS(void, show_element, (const char* id), {
+  var element = document.getElementById(UTF8ToString(id));
+  if (element) element.style.display = "block";
+});
 
 static void compute_search_layout(WebContext* ctx, Texture2D* textures) {
     CLAY_AUTO_ID({
@@ -113,6 +125,13 @@ void update_ui(WebContext *ctx) {
 
     if (ctx->browse_font_maps.input) {
         module_text_box_add(&ctx->browse_font_maps, NULL);
+        EM_ASM({
+            showKeyboard();
+        });
+        show_element("hiddenInput");
+    }
+    else {
+        hide_element("hiddenInput");
     }
 }
 
