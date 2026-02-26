@@ -112,7 +112,11 @@ int32_t main(int32_t argc, char** argv) {
         generate_ai_answer(&ctx, text_data, &response);
     }
     else {
-        response =  "To find the derivative of \\(2x^2 + 4x\\), apply the power rule to each term.\n\nFor the term \\(2x^2\\):  \n- Coefficient \\(a = 2\\), exponent \\(n = 2\\)  \n- Derivative: \\(2 \\cdot 2 \\cdot x^{2-1} = 4x\\)\n\nFor the term \\(4x\\):  \n- Coefficient \\(a = 4\\), exponent \\(n = 1\\)  \n- Derivative: \\(4 \\cdot 1 \\cdot x^{1-1} = 4 \\cdot 1 \\cdot 1 = 4\\)\n\nCombine the results:  \n\\(\\frac{d}{dx}(2x^2 + 4x) = 4x + 4\\)\n\n\\boxed{4x+4}";
+        response =  "**Argumentationsstruktur von Piepers Text \"Kritische Intoleranz\"**  \n\n1. **These**:  \n   - Toleranz bedeutet, Differenz zu akzeptieren, aber bei grundlegenden ethischen Prinzipien (z.B. Menschenrechten) muss man kritisch intolerant sein.  \n   - Kritische Intoleranz ist notwendig, um Menschenrechte zu schützen.  \n\n2. **Argumente**:  \n   - Zitiert Popper: Unbeschränkte Toleranz führt zu ihrem Ende (Beispiel: Dritte Weltkrieg).  \n   - Menschenrechte gelten unabhängig von Kultur, Religion usw. Wer diese verweigert, muss kritisiert werden.  \n   - Dialog mit Gegnern, die keine rationale Diskussion wollen, ist sinnlos.  \n\n3. **Beispiele**:  \n   - Popper: Toleranz kann nicht gegen Intoleranz verloren gehen.  \n   - Menschenrechte: Keine Toleranz für Praktiken, die Menschenrechte verletzen (z.B. Hinrichtungen).  \n\n4. **Folgerungen**:  \n   - Kritische Intoleranz ist legitim, um Menschenrechte zu schützen.  \n   - Kritik und Protest gegen Menschenrechtsverletzungen sind notwendig.  \n\n5. **Fazit**:  \n   - Toleranz und kritische Intoleranz sind komplementär: Toleranz für kulturelle Vielfalt, aber keine für Menschenrechtsverletzungen."
+
+
+
+"Asci String: **Argumentationsstruktur von Piepers Text \"Kritische Intoleranz\"**  \n\n1. **These**:  \n   - Toleranz bedeutet, Differenz zu akzeptieren, aber bei grundlegenden ethischen Prinzipien (z.B. Menschenrechten) muss man kritisch intolerant sein.  \n   - Kritische Intoleranz ist notwendig, um Menschenrechte zu sch�tzen.  \n\n2. **Argumente**:  \n   - Zitiert Popper: Unbeschr�nkte Toleranz f�hrt zu ihrem Ende (Beispiel: Dritte Weltkrieg).  \n   - Menschenrechte gelten unabh�ngig von Kultur, Religion usw. Wer diese verweigert, muss kritisiert werden.  \n   - Dialog mit Gegnern, die keine rationale Diskussion wollen, ist sinnlos.  \n\n3. **Beispiele**:  \n   - Popper: Toleranz kann nicht gegen Intoleranz verloren gehen.  \n   - Menschenrechte: Keine Toleranz f�r Praktiken, die Menschenrechte verletzen (z.B. Hinrichtungen).  \n\n4. **Folgerungen**:  \n   - Kritische Intoleranz ist legitim, um Menschenrechte zu sch�tzen.  \n   - Kritik und Protest gegen Menschenrechtsverletzungen sind notwendig.  \n\n5. **Fazit**:  \n   - Toleranz und kritische Intoleranz sind komplement�r: Toleranz f�r kulturelle Vielfalt, aber keine f�r Menschenrechtsverletzungen.";
     }
     fprintf(stderr, "%s\n", response);
 
@@ -123,7 +127,7 @@ int32_t main(int32_t argc, char** argv) {
             .height = 2150,
         },
         .padding = {
-            .x = 0,
+            .x = 15,
             .y = 0,
         },
     };

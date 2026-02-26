@@ -171,7 +171,7 @@ static void draw_char(uint8_t c, DrawContext* draw_ctx, CharacterSet* set, Page*
     for (uint32_t y = 0; y < CHAR_SIZE; y++) {
         for (uint32_t x = 0; x < char_width; x++) {
             uint32_t dst_x = draw_ctx->current_x + x;
-            uint32_t dst_y = draw_ctx->current_y + y;
+            uint32_t dst_y = draw_ctx->current_y + y + char_offset_y;
             uint32_t dst_index = (dst_y * page->dim.width + dst_x) * draw_ctx->channels;
 
             uint32_t src_x = tile_offset_x + (CHAR_SIZE * 0.5f) - (char_width * 0.5f) + char_offset_x + x;
@@ -191,9 +191,10 @@ static void draw_char(uint8_t c, DrawContext* draw_ctx, CharacterSet* set, Page*
 
             uint8_t luminance = pixel_luminance(pixel, set->image_channels);
 
-            if (luminance < 120) {
+            if (luminance < 200) {
                 for (int32_t c = 0; c < draw_ctx->channels; c++) {
-                    output_data[dst_index + c] = 0;
+                    output_data[dst_index + c] = luminance;
+                    if (c == 3) output_data[dst_index + c] = 255; // TODO: tmp
                 }
             }
         }
@@ -269,6 +270,17 @@ int32_t generate_font_image(struct Context* ctx, Page page, char* text, Characte
             }
 
             int32_t selected_set = rand() % sets_count;
+
+            int n = 0;
+            uint32_t curr_x = draw_ctx.current_x;
+            while (text_index + j + n < asci_text_len && asci_text[text_index + j + n] != ' ') {
+                curr_x += sets[selected_set].font_widths[asci_text[text_index + j + n++]].width;
+            }
+            if (curr_x >= draw_ctx.usable_pixels_x) {
+                draw_ctx.current_x = page.padding.x;
+                draw_ctx.current_y += CHAR_SIZE;
+            }
+
             draw_char(asci_text[text_index + j], &draw_ctx, &sets[selected_set], &page, images.images_data[i]);
         }
         text_index += j; // TODO: maybe + 1

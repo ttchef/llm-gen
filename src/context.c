@@ -37,6 +37,42 @@ void deinit_ctx(Context *ctx) {
     TessBaseAPIDelete(ctx->ocr_ctx);
 }
 
+static char *json_escape(const char *s) {
+    size_t len = 0;
+    const char *p;
+
+    for (p = s; *p; p++) {
+        switch (*p) {
+            case '\"':
+            case '\\':
+            case '\n':
+            case '\r':
+            case '\t':
+                len += 2;
+                break;
+            default:
+                len += 1;
+        }
+    }
+
+    char *out = malloc(len + 1);
+    char *o = out;
+
+    for (p = s; *p; p++) {
+        switch (*p) {
+            case '\"': *o++='\\'; *o++='\"'; break;
+            case '\\': *o++='\\'; *o++='\\'; break;
+            case '\n': *o++='\\'; *o++='n';  break;
+            case '\r': *o++='\\'; *o++='r';  break;
+            case '\t': *o++='\\'; *o++='t';  break;
+            default:   *o++=*p;
+        }
+    }
+
+    *o = '\0';
+    return out;
+}
+
 void get_texts(Context* ctx, char*** text_data, char** pdf_data, char** img_data, char** prompt_data) {
     for (int32_t i = 0; i < darrayLength(pdf_data); i++) {
         fz_pixmap pix;
@@ -48,7 +84,9 @@ void get_texts(Context* ctx, char*** text_data, char** pdf_data, char** img_data
         };
         char* string = string_from_img(ctx, &img);
         if (!string) continue;
-        darrayPush(*text_data, string);
+
+        char* str = json_escape(string);
+        darrayPush(*text_data, str);
     }
 
     for (int32_t i = 0; i < darrayLength(img_data); i++) {
@@ -65,7 +103,9 @@ void get_texts(Context* ctx, char*** text_data, char** pdf_data, char** img_data
 
         char* string = string_from_img(ctx, &img);
         if (!string) continue;
-        darrayPush(*text_data, string);
+
+        char* str = json_escape(string);
+        darrayPush(*text_data, str);
         free(img.data.stbi.data);
     }
 

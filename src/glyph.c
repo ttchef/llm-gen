@@ -19,6 +19,9 @@ const uint32_t SYM_TOTAL = 100;
 
 const uint8_t DETECTION_THRESHOLD = 120;
 
+// TODO: tmppp!! 
+#include "array.h"
+
 typedef struct Vec2i {
     int32_t x;
     int32_t y;
@@ -60,7 +63,7 @@ static void detect_glyph_data(ImageData* img, Vec2i src_offset, Glyph* glyph, ui
         glyph->width = (max_x - min_x) + 1;
         float glyph_center_x = min_x + glyph->width * 0.5f;
         glyph->offset_x = glyph_center_x - (cell_px * 0.5f);
-        glyph->offset_y = 0;
+        glyph->offset_y = font_widths[c].offset_y;
     }
 
     glyph->width += 1; // TODO: Remove Constant PADDING
